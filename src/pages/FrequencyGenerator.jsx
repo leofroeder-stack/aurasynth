@@ -22,6 +22,7 @@ export default function FrequencyGenerator() {
   const [symmetry, setSymmetry] = useState(4);
   const [bloom, setBloom] = useState(0.5);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [analyserNode, setAnalyserNode] = useState(null);
   
   const audioContextRef = useRef(null);
   const oscillatorRef = useRef(null);
@@ -36,6 +37,7 @@ export default function FrequencyGenerator() {
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 256;
       analyserRef.current.connect(audioContextRef.current.destination);
+      setAnalyserNode(analyserRef.current);
     }
     return audioContextRef.current;
   }, []);
@@ -132,7 +134,7 @@ export default function FrequencyGenerator() {
           frequency={frequency}
           isPlaying={isPlaying}
           waveType={waveType}
-          analyserNode={analyserRef.current}
+          analyserNode={analyserNode}
           visualStyle={visualStyle}
           colorPalette={colorPalette}
           speed={speed}
