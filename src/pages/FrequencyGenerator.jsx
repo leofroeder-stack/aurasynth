@@ -2,9 +2,9 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Settings2, X } from "lucide-react";
-import WebGLVisualizer from '@/components/frequency/WebGLVisualizer';
-import AudioControls from '@/components/frequency/AudioControls';
-import VisualControls from '@/components/frequency/VisualControls';
+import WebGLVisualizer from '@/components/frequency/WebGLVisualizer.js';
+import AudioControls from '@/components/frequency/AudioControls.js';
+import VisualControls from '@/components/frequency/VisualControls.js';
 
 export default function FrequencyGenerator() {
   const [frequency, setFrequency] = useState(440);
