@@ -1,13 +1,26 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from "@/components/ui/button";
+import { Settings2, X } from "lucide-react";
 import WebGLVisualizer from '@/components/frequency/WebGLVisualizer';
 import AudioControls from '@/components/frequency/AudioControls';
+import VisualControls from '@/components/frequency/VisualControls';
 
 export default function FrequencyGenerator() {
   const [frequency, setFrequency] = useState(440);
   const [volume, setVolume] = useState(0.5);
   const [waveType, setWaveType] = useState('sine');
   const [isPlaying, setIsPlaying] = useState(false);
+  
+  // Visual parameters
+  const [showVisualControls, setShowVisualControls] = useState(false);
+  const [visualStyle, setVisualStyle] = useState('fractal');
+  const [colorPalette, setColorPalette] = useState('cyber');
+  const [speed, setSpeed] = useState(1);
+  const [intensity, setIntensity] = useState(1);
+  const [complexity, setComplexity] = useState(1);
+  const [symmetry, setSymmetry] = useState(4);
+  const [bloom, setBloom] = useState(0.5);
   
   const audioContextRef = useRef(null);
   const oscillatorRef = useRef(null);
@@ -119,6 +132,13 @@ export default function FrequencyGenerator() {
           isPlaying={isPlaying}
           waveType={waveType}
           analyserNode={analyserRef.current}
+          visualStyle={visualStyle}
+          colorPalette={colorPalette}
+          speed={speed}
+          intensity={intensity}
+          complexity={complexity}
+          symmetry={symmetry}
+          bloom={bloom}
         />
       </div>
 
@@ -167,20 +187,64 @@ export default function FrequencyGenerator() {
           </div>
         </motion.main>
 
-        {/* Status indicator */}
+        {/* Status indicator and Visual Controls Toggle */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="absolute top-6 right-6 flex items-center gap-2"
+          className="absolute top-6 right-6 flex items-center gap-4"
         >
-          <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${
-            isPlaying ? 'bg-cyan-400 animate-pulse' : 'bg-gray-600'
-          }`} />
-          <span className="text-xs text-gray-500 uppercase tracking-wider">
-            {isPlaying ? 'Playing' : 'Ready'}
-          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowVisualControls(!showVisualControls)}
+            className={`text-gray-400 hover:text-white hover:bg-white/10 ${
+              showVisualControls ? 'bg-white/10 text-white' : ''
+            }`}
+          >
+            {showVisualControls ? <X className="w-4 h-4" /> : <Settings2 className="w-4 h-4" />}
+            <span className="ml-2 text-xs">Visuals</span>
+          </Button>
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${
+              isPlaying ? 'bg-cyan-400 animate-pulse' : 'bg-gray-600'
+            }`} />
+            <span className="text-xs text-gray-500 uppercase tracking-wider">
+              {isPlaying ? 'Playing' : 'Ready'}
+            </span>
+          </div>
         </motion.div>
+
+        {/* Visual Controls Panel */}
+        <AnimatePresence>
+          {showVisualControls && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="absolute top-20 left-4 right-4 md:left-8 md:right-8 z-20"
+            >
+              <div className="backdrop-blur-xl bg-black/50 rounded-2xl border border-white/10 p-6">
+                <VisualControls
+                  visualStyle={visualStyle}
+                  setVisualStyle={setVisualStyle}
+                  colorPalette={colorPalette}
+                  setColorPalette={setColorPalette}
+                  speed={speed}
+                  setSpeed={setSpeed}
+                  intensity={intensity}
+                  setIntensity={setIntensity}
+                  complexity={complexity}
+                  setComplexity={setComplexity}
+                  symmetry={symmetry}
+                  setSymmetry={setSymmetry}
+                  bloom={bloom}
+                  setBloom={setBloom}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
