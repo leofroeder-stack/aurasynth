@@ -144,76 +144,99 @@ export default function FrequencyGenerator() {
       </div>
 
       {/* Overlay gradient for readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-[#0a0a0f]/50 pointer-events-none" />
+      <div className={`absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-[#0a0a0f]/50 pointer-events-none transition-opacity duration-500 ${isFullscreen ? 'opacity-0' : ''}`} />
 
       {/* Content */}
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
-        <motion.header 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-6 md:p-8"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-fuchsia-500 flex items-center justify-center">
-              <span className="text-xl">∿</span>
-            </div>
-            <div>
-              <h1 className="text-xl font-light tracking-wide">Frequency Generator</h1>
-              <p className="text-xs text-gray-500">Audio synthesis with WebGL visualization</p>
-            </div>
-          </div>
-        </motion.header>
+        <AnimatePresence>
+          {!isFullscreen && (
+            <motion.header 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="p-6 md:p-8"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-fuchsia-500 flex items-center justify-center">
+                  <span className="text-xl">∿</span>
+                </div>
+                <div>
+                  <h1 className="text-xl font-light tracking-wide">Frequency Generator</h1>
+                  <p className="text-xs text-gray-500">Audio synthesis with WebGL visualization</p>
+                </div>
+              </div>
+            </motion.header>
+          )}
+        </AnimatePresence>
 
         {/* Main Controls */}
-        <motion.main 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="flex-1 flex items-end pb-8 md:pb-12"
-        >
-          <div className="w-full px-4 md:px-8">
-            <div className="max-w-4xl mx-auto backdrop-blur-xl bg-black/30 rounded-3xl border border-white/10 p-6 md:p-10">
-              <AudioControls
-                frequency={frequency}
-                setFrequency={setFrequency}
-                volume={volume}
-                setVolume={setVolume}
-                waveType={waveType}
-                setWaveType={setWaveType}
-                isPlaying={isPlaying}
-                togglePlay={togglePlay}
-              />
-            </div>
-          </div>
-        </motion.main>
+        <AnimatePresence>
+          {!isFullscreen && (
+            <motion.main 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, y: 50 }}
+              transition={{ delay: 0.2 }}
+              className="flex-1 flex items-end pb-8 md:pb-12"
+            >
+              <div className="w-full px-4 md:px-8">
+                <div className="max-w-4xl mx-auto backdrop-blur-xl bg-black/30 rounded-3xl border border-white/10 p-6 md:p-10">
+                  <AudioControls
+                    frequency={frequency}
+                    setFrequency={setFrequency}
+                    volume={volume}
+                    setVolume={setVolume}
+                    waveType={waveType}
+                    setWaveType={setWaveType}
+                    isPlaying={isPlaying}
+                    togglePlay={togglePlay}
+                  />
+                </div>
+              </div>
+            </motion.main>
+          )}
+        </AnimatePresence>
 
         {/* Status indicator and Visual Controls Toggle */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="absolute top-6 right-6 flex items-center gap-4"
+          className={`absolute top-6 right-6 flex items-center gap-4 ${isFullscreen ? 'opacity-0 hover:opacity-100 transition-opacity duration-300' : ''}`}
         >
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setShowVisualControls(!showVisualControls)}
-            className={`text-gray-400 hover:text-white hover:bg-white/10 ${
-              showVisualControls ? 'bg-white/10 text-white' : ''
-            }`}
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="text-gray-400 hover:text-white hover:bg-white/10"
           >
-            {showVisualControls ? <X className="w-4 h-4" /> : <Settings2 className="w-4 h-4" />}
-            <span className="ml-2 text-xs">Visuals</span>
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            <span className="ml-2 text-xs">{isFullscreen ? 'Exit' : 'Fullscreen'}</span>
           </Button>
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${
-              isPlaying ? 'bg-cyan-400 animate-pulse' : 'bg-gray-600'
-            }`} />
-            <span className="text-xs text-gray-500 uppercase tracking-wider">
-              {isPlaying ? 'Playing' : 'Ready'}
-            </span>
-          </div>
+          {!isFullscreen && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowVisualControls(!showVisualControls)}
+                className={`text-gray-400 hover:text-white hover:bg-white/10 ${
+                  showVisualControls ? 'bg-white/10 text-white' : ''
+                }`}
+              >
+                {showVisualControls ? <X className="w-4 h-4" /> : <Settings2 className="w-4 h-4" />}
+                <span className="ml-2 text-xs">Visuals</span>
+              </Button>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${
+                  isPlaying ? 'bg-cyan-400 animate-pulse' : 'bg-gray-600'
+                }`} />
+                <span className="text-xs text-gray-500 uppercase tracking-wider">
+                  {isPlaying ? 'Playing' : 'Ready'}
+                </span>
+              </div>
+            </>
+          )}
         </motion.div>
 
         {/* Visual Controls Panel */}
