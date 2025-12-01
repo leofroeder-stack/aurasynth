@@ -251,9 +251,9 @@ export default function FrequencyGenerator() {
               <div className="backdrop-blur-xl bg-black/50 rounded-2xl border border-white/10 p-6">
                 <VisualControls
                   visualStyle={visualStyle}
-                  setVisualStyle={setVisualStyle}
+                  setVisualStyle={(style) => { setVisualStyle(style); setShowVisualControls(false); }}
                   colorPalette={colorPalette}
-                  setColorPalette={setColorPalette}
+                  setColorPalette={(palette) => { setColorPalette(palette); setShowVisualControls(false); }}
                   speed={speed}
                   setSpeed={setSpeed}
                   intensity={intensity}
