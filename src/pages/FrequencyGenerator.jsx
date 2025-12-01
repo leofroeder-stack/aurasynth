@@ -21,6 +21,9 @@ export default function FrequencyGenerator() {
   const [complexity, setComplexity] = useState(1);
   const [symmetry, setSymmetry] = useState(4);
   const [bloom, setBloom] = useState(0.5);
+  const [chromaticAberration, setChromaticAberration] = useState(0);
+  const [noiseAmount, setNoiseAmount] = useState(0);
+  const [pulseReactivity, setPulseReactivity] = useState(0.5);
   
   const audioContextRef = useRef(null);
   const oscillatorRef = useRef(null);
@@ -139,6 +142,9 @@ export default function FrequencyGenerator() {
           complexity={complexity}
           symmetry={symmetry}
           bloom={bloom}
+          chromaticAberration={chromaticAberration}
+          noiseAmount={noiseAmount}
+          pulseReactivity={pulseReactivity}
         />
       </div>
 
@@ -240,6 +246,12 @@ export default function FrequencyGenerator() {
                   setSymmetry={setSymmetry}
                   bloom={bloom}
                   setBloom={setBloom}
+                  chromaticAberration={chromaticAberration}
+                  setChromaticAberration={setChromaticAberration}
+                  noiseAmount={noiseAmount}
+                  setNoiseAmount={setNoiseAmount}
+                  pulseReactivity={pulseReactivity}
+                  setPulseReactivity={setPulseReactivity}
                 />
               </div>
             </motion.div>
