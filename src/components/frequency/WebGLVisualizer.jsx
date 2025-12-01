@@ -145,24 +145,29 @@ export default function WebGLVisualizer({
       vec3 styleFractal(vec2 uv, vec2 uv0, float time, float freqNorm, float audioSum) {
         vec3 finalColor = vec3(0.0);
         float comp = u_complexity;
+        float freqEffect = freqNorm * 3.0;
+        
+        // Frequency affects zoom/scale
+        uv *= 1.0 + freqNorm * 0.5;
         
         for (float i = 0.0; i < 4.0; i++) {
-          uv = fract(uv * (1.0 + comp * 0.5)) - 0.5;
+          uv = fract(uv * (1.0 + comp * 0.5 + freqNorm * 0.3)) - 0.5;
           float d = length(uv) * exp(-length(uv0));
-          vec3 col = getColor(length(uv0) + i * 0.4 + time * 0.2 + freqNorm);
+          vec3 col = getColor(length(uv0) + i * 0.4 + time * 0.2 + freqEffect);
           
           float wave;
+          float freqMod = freqNorm * 20.0;
           if (u_waveType < 0.5) {
-            wave = sin(d * 8.0 * comp + time * 2.0 + freqNorm * 10.0);
+            wave = sin(d * (8.0 + freqMod) * comp + time * 2.0 + freqEffect * 5.0);
           } else if (u_waveType < 1.5) {
-            wave = sign(sin(d * 8.0 * comp + time * 2.0 + freqNorm * 10.0));
+            wave = sign(sin(d * (8.0 + freqMod) * comp + time * 2.0 + freqEffect * 5.0));
           } else if (u_waveType < 2.5) {
-            wave = fract(d * comp + time * 0.5 + freqNorm) * 2.0 - 1.0;
+            wave = fract(d * comp * (1.0 + freqNorm) + time * 0.5 + freqEffect) * 2.0 - 1.0;
           } else {
-            wave = abs(fract(d * comp + time * 0.5 + freqNorm) * 2.0 - 1.0) * 2.0 - 1.0;
+            wave = abs(fract(d * comp * (1.0 + freqNorm) + time * 0.5 + freqEffect) * 2.0 - 1.0) * 2.0 - 1.0;
           }
           
-          d = wave * u_amplitude * u_intensity;
+          d = wave * u_amplitude * u_intensity * (0.8 + freqNorm * 0.4);
           d = abs(d);
           d = pow(0.01 / d, 1.2);
           finalColor += col * d * (0.5 + audioSum * 0.5);
@@ -174,19 +179,23 @@ export default function WebGLVisualizer({
       vec3 styleTunnel(vec2 uv, float time, float freqNorm, float audioSum) {
         float angle = atan(uv.y, uv.x);
         float radius = length(uv);
+        float freqEffect = freqNorm * 3.0;
         
         float tunnelAngle = angle / TAU + 0.5;
         float tunnelDepth = 1.0 / radius;
         
-        vec2 tunnelUV = vec2(tunnelAngle * u_symmetry, tunnelDepth - time * u_speed);
+        // Frequency affects tunnel speed and twist
+        float freqSpeed = u_speed * (0.5 + freqNorm * 2.0);
+        vec2 tunnelUV = vec2(tunnelAngle * u_symmetry + freqNorm * 0.5, tunnelDepth - time * freqSpeed);
         
-        float pattern = sin(tunnelUV.x * TAU * u_complexity) * sin(tunnelUV.y * 10.0 * u_complexity);
-        pattern += sin(tunnelUV.x * TAU * 2.0 * u_complexity + time) * 0.5;
+        float pattern = sin(tunnelUV.x * TAU * u_complexity * (1.0 + freqNorm)) * sin(tunnelUV.y * (10.0 + freqNorm * 20.0) * u_complexity);
+        pattern += sin(tunnelUV.x * TAU * 2.0 * u_complexity + time * (1.0 + freqNorm * 2.0)) * 0.5;
         pattern += audioSum * sin(tunnelUV.y * 5.0 - time * 3.0);
+        pattern += sin(freqEffect * 10.0 + time) * 0.3;
         
-        vec3 col = getColor(pattern * 0.5 + time * 0.1 + freqNorm);
-        col *= (1.0 - radius * 0.5) * u_intensity;
-        col += getColor(tunnelDepth * 0.1) * u_bloom * 0.3;
+        vec3 col = getColor(pattern * 0.5 + time * 0.1 + freqEffect);
+        col *= (1.0 - radius * 0.5) * u_intensity * (0.8 + freqNorm * 0.5);
+        col += getColor(tunnelDepth * 0.1 + freqNorm) * u_bloom * 0.3;
         
         return col;
       }
@@ -194,55 +203,65 @@ export default function WebGLVisualizer({
       vec3 styleKaleidoscope(vec2 uv, float time, float freqNorm, float audioSum) {
         float angle = atan(uv.y, uv.x);
         float radius = length(uv);
+        float freqEffect = freqNorm * 3.0;
         
-        float segments = u_symmetry;
-        angle = mod(angle, TAU / segments);
+        // Frequency affects segment rotation
+        float segments = u_symmetry + floor(freqNorm * 4.0);
+        angle = mod(angle + freqNorm * TAU, TAU / segments);
         angle = abs(angle - PI / segments);
         
-        vec2 kalUV = vec2(cos(angle), sin(angle)) * radius;
-        kalUV += time * u_speed * 0.2;
+        vec2 kalUV = vec2(cos(angle), sin(angle)) * radius * (1.0 + freqNorm * 0.5);
+        kalUV += time * u_speed * 0.2 * (1.0 + freqNorm);
         
-        float n = fbm(kalUV * 3.0 * u_complexity + time * 0.5, u_complexity);
-        n += audioSum * 0.5;
+        float n = fbm(kalUV * 3.0 * u_complexity * (1.0 + freqNorm * 0.5) + time * 0.5, u_complexity);
+        n += audioSum * 0.5 + freqNorm * 0.5;
         
-        vec3 col = getColor(n + freqNorm + time * 0.1);
-        col *= (1.0 + sin(radius * 10.0 * u_complexity - time * 2.0) * 0.3) * u_intensity;
+        vec3 col = getColor(n + freqEffect + time * 0.1);
+        col *= (1.0 + sin(radius * (10.0 + freqNorm * 15.0) * u_complexity - time * 2.0) * 0.3) * u_intensity;
         
-        float glow = exp(-radius * 2.0) * u_bloom;
-        col += getColor(time * 0.2) * glow;
+        float glow = exp(-radius * (2.0 - freqNorm)) * u_bloom * (1.0 + freqNorm);
+        col += getColor(time * 0.2 + freqEffect) * glow;
         
         return col;
       }
       
       vec3 stylePlasma(vec2 uv, float time, float freqNorm, float audioSum) {
         float v = 0.0;
-        vec2 c = uv * u_complexity * 3.0;
+        float freqEffect = freqNorm * 3.0;
+        float freqSpeed = u_speed * (0.5 + freqNorm * 2.0);
+        vec2 c = uv * u_complexity * 3.0 * (1.0 + freqNorm * 0.5);
         
-        v += sin((c.x + time * u_speed));
-        v += sin((c.y + time * u_speed) * 0.5);
-        v += sin((c.x + c.y + time * u_speed) * 0.5);
+        // Frequency dramatically affects wave patterns
+        v += sin((c.x + time * freqSpeed) * (1.0 + freqNorm * 2.0));
+        v += sin((c.y + time * freqSpeed) * 0.5 * (1.0 + freqNorm));
+        v += sin((c.x + c.y + time * freqSpeed) * 0.5 + freqEffect * 5.0);
         
-        c += vec2(sin(time * u_speed * 0.3), cos(time * u_speed * 0.5)) * 2.0;
-        v += sin(sqrt(c.x * c.x + c.y * c.y + 1.0) + time * u_speed);
+        c += vec2(sin(time * freqSpeed * 0.3 + freqEffect), cos(time * freqSpeed * 0.5)) * 2.0;
+        v += sin(sqrt(c.x * c.x + c.y * c.y + 1.0) * (1.0 + freqNorm) + time * freqSpeed);
+        v += sin(freqEffect * 8.0 + time * 2.0) * 0.5;
         
         v = v * 0.5 + audioSum;
         
-        vec3 col = getColor(v * 0.5 + freqNorm + time * 0.05);
-        col *= u_intensity;
+        vec3 col = getColor(v * 0.5 + freqEffect + time * 0.05);
+        col *= u_intensity * (0.8 + freqNorm * 0.4);
         
-        float glow = exp(-length(uv) * (2.0 - u_bloom));
-        col += getColor(v + time * 0.1) * glow * 0.5;
+        float glow = exp(-length(uv) * (2.0 - u_bloom - freqNorm * 0.5));
+        col += getColor(v + time * 0.1 + freqEffect) * glow * 0.5;
         
         return col;
       }
       
       vec3 styleWaveform(vec2 uv, float time, float freqNorm, float audioSum) {
         vec3 col = vec3(0.0);
+        float freqEffect = freqNorm * 3.0;
+        float freqMult = 1.0 + freqNorm * 3.0;
         
         for (float i = 0.0; i < 5.0; i++) {
           float offset = i * 0.15 - 0.3;
-          float waveY = sin(uv.x * TAU * u_complexity + time * u_speed * 2.0 + i) * 0.3;
-          waveY += sin(uv.x * TAU * 2.0 * u_complexity + time * u_speed * 3.0) * 0.1;
+          // Frequency affects wave complexity and amplitude
+          float waveY = sin(uv.x * TAU * u_complexity * freqMult + time * u_speed * 2.0 + i + freqEffect * 2.0) * (0.3 + freqNorm * 0.2);
+          waveY += sin(uv.x * TAU * 2.0 * u_complexity * freqMult + time * u_speed * 3.0 * (1.0 + freqNorm)) * 0.1;
+          waveY += sin(uv.x * freqNorm * 30.0 + time * 4.0) * freqNorm * 0.15;
           waveY *= audioSum + 0.5;
           waveY += offset;
           
@@ -250,34 +269,37 @@ export default function WebGLVisualizer({
           float line = 0.01 / dist;
           line = pow(line, 1.5);
           
-          col += getColor(i * 0.2 + time * 0.1 + freqNorm) * line * u_intensity * 0.5;
+          col += getColor(i * 0.2 + time * 0.1 + freqEffect) * line * u_intensity * 0.5;
         }
         
-        float glow = exp(-length(uv) * (3.0 - u_bloom * 2.0));
-        col += getColor(time * 0.2) * glow * 0.3;
+        float glow = exp(-length(uv) * (3.0 - u_bloom * 2.0 - freqNorm));
+        col += getColor(time * 0.2 + freqEffect) * glow * (0.3 + freqNorm * 0.2);
         
         return col;
       }
       
       vec3 styleParticles(vec2 uv, float time, float freqNorm, float audioSum) {
         vec3 col = vec3(0.0);
-        float comp = u_complexity * 10.0 + 5.0;
+        float freqEffect = freqNorm * 3.0;
+        float comp = u_complexity * 10.0 + 5.0 + freqNorm * 10.0;
+        float freqSpeed = u_speed * (0.5 + freqNorm * 2.0);
         
-        for (float i = 0.0; i < 30.0; i++) {
+        for (float i = 0.0; i < 40.0; i++) {
           if (i >= comp) break;
+          // Frequency affects particle orbit size and speed
           vec2 particlePos = vec2(
-            sin(i * 174.2 + time * u_speed * (0.5 + hash(vec2(i, 0.0)) * 0.5)),
-            cos(i * 267.3 + time * u_speed * (0.5 + hash(vec2(0.0, i)) * 0.5))
-          ) * (0.5 + audioSum * 0.5);
+            sin(i * 174.2 + time * freqSpeed * (0.5 + hash(vec2(i, 0.0)) * 0.5) + freqEffect),
+            cos(i * 267.3 + time * freqSpeed * (0.5 + hash(vec2(0.0, i)) * 0.5))
+          ) * (0.5 + audioSum * 0.5 + freqNorm * 0.3);
           
           float dist = length(uv - particlePos);
           float size = 0.02 + hash(vec2(i, i)) * 0.03;
-          size *= 1.0 + audioSum * 0.5;
+          size *= 1.0 + audioSum * 0.5 + freqNorm * 0.5;
           
           float particle = smoothstep(size, size * 0.5, dist);
-          float glow = size / dist * 0.1 * u_bloom;
+          float glow = size / dist * 0.1 * u_bloom * (1.0 + freqNorm);
           
-          vec3 particleCol = getColor(i * 0.1 + time * 0.05 + freqNorm);
+          vec3 particleCol = getColor(i * 0.1 + time * 0.05 + freqEffect);
           col += particleCol * (particle + glow) * u_intensity;
         }
         
@@ -286,28 +308,33 @@ export default function WebGLVisualizer({
       
       vec3 styleGeometric(vec2 uv, float time, float freqNorm, float audioSum) {
         vec3 col = vec3(0.0);
+        float freqEffect = freqNorm * 3.0;
         
         float angle = atan(uv.y, uv.x);
         float radius = length(uv);
         
-        float segments = u_symmetry;
+        // Frequency affects segment count and rotation speed
+        float segments = u_symmetry + floor(freqNorm * 6.0);
         float segmentAngle = TAU / segments;
-        angle = mod(angle + time * u_speed * 0.2, segmentAngle);
+        float rotSpeed = u_speed * 0.2 * (1.0 + freqNorm * 3.0);
+        angle = mod(angle + time * rotSpeed + freqNorm * TAU, segmentAngle);
         
         for (float i = 1.0; i <= 5.0; i++) {
-          float ringRadius = i * 0.2 * (0.8 + audioSum * 0.4);
-          float ringWidth = 0.02;
+          // Frequency affects ring spacing and pulsing
+          float ringRadius = i * 0.2 * (0.8 + audioSum * 0.4 + freqNorm * 0.3);
+          ringRadius += sin(time * 2.0 + freqEffect * 5.0 + i) * freqNorm * 0.1;
+          float ringWidth = 0.02 + freqNorm * 0.01;
           
           float ring = smoothstep(ringWidth, 0.0, abs(radius - ringRadius));
           
-          float spokes = step(0.98, cos(angle * segments * i * u_complexity));
+          float spokes = step(0.98 - freqNorm * 0.05, cos(angle * segments * i * u_complexity));
           
-          vec3 shapeCol = getColor(i * 0.2 + time * 0.1 + freqNorm);
+          vec3 shapeCol = getColor(i * 0.2 + time * 0.1 + freqEffect);
           col += shapeCol * (ring + spokes * 0.5) * u_intensity;
         }
         
-        float centerGlow = exp(-radius * (4.0 - u_bloom * 2.0));
-        col += getColor(time * 0.2 + freqNorm) * centerGlow;
+        float centerGlow = exp(-radius * (4.0 - u_bloom * 2.0 - freqNorm));
+        col += getColor(time * 0.2 + freqEffect) * centerGlow * (1.0 + freqNorm * 0.5);
         
         return col;
       }
