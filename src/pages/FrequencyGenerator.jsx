@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
-import { Settings2, X } from "lucide-react";
+import { Settings2, X, Maximize2, Minimize2 } from "lucide-react";
 import WebGLVisualizer from '../components/frequency/WebGLVisualizer';
 import AudioControls from '../components/frequency/AudioControls';
 import VisualControls from '../components/frequency/VisualControls';
@@ -21,6 +21,7 @@ export default function FrequencyGenerator() {
   const [complexity, setComplexity] = useState(1);
   const [symmetry, setSymmetry] = useState(4);
   const [bloom, setBloom] = useState(0.5);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   const audioContextRef = useRef(null);
   const oscillatorRef = useRef(null);
