@@ -812,6 +812,8 @@ export default function WebGLVisualizer({
           finalColor = styleRings(uv, time, freqNorm, audioSum);
         } else if (u_visualStyle == 11) {
           finalColor = styleHexgrid(uv, time, freqNorm, audioSum);
+        } else if (u_visualStyle == 12) {
+          finalColor = styleChladni(uv, time, freqNorm, audioSum);
         } else if (u_visualStyle == 13) {
                         finalColor = styleAurora(uv, time, freqNorm, audioSum);
                       } else if (u_visualStyle == 14) {
