@@ -27,6 +27,7 @@ export default function FrequencyGenerator() {
   const [symmetry, setSymmetry] = useState(4);
   const [bloom, setBloom] = useState(0.5);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef(null);
   const [analyserNode, setAnalyserNode] = useState(null);
   
   // Binaural & Isochronic beats
@@ -218,7 +219,7 @@ export default function FrequencyGenerator() {
       }
       // Auto fullscreen after 5 seconds
       fullscreenTimerRef.current = setTimeout(() => {
-        setIsFullscreen(true);
+        enterFullscreen();
       }, 5000);
     }
     setIsPlaying(!isPlaying);
@@ -275,6 +276,32 @@ export default function FrequencyGenerator() {
     }
   }, [waveType]);
 
+  // Handle browser fullscreen
+  const enterFullscreen = useCallback(() => {
+    setIsFullscreen(true);
+    if (containerRef.current && document.fullscreenEnabled) {
+      containerRef.current.requestFullscreen().catch(() => {});
+    }
+  }, []);
+
+  const exitFullscreen = useCallback(() => {
+    setIsFullscreen(false);
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, []);
+
+  // Sync state when user exits fullscreen via Escape key
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, [isFullscreen]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -290,13 +317,13 @@ export default function FrequencyGenerator() {
   }, [stopOscillator, stopAudioFile]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white overflow-hidden relative">
+    <div ref={containerRef} className="min-h-screen bg-[#0a0a0f] text-white overflow-hidden relative">
       {/* Fullscreen frequency control overlay */}
       {isFullscreen && (
         <FrequencyOverlay 
           frequency={frequency}
           setFrequency={setFrequency}
-          onDoubleTap={() => setIsFullscreen(false)}
+          onDoubleTap={exitFullscreen}
         />
       )}
 
@@ -371,7 +398,7 @@ export default function FrequencyGenerator() {
                     setWaveType={setWaveType}
                     isPlaying={isPlaying}
                     togglePlay={togglePlay}
-                    onFullscreen={() => setIsFullscreen(true)}
+                    onFullscreen={enterFullscreen}
                     onOpenVisuals={() => setShowVisualControls(true)}
                     minFreq={minFreq}
                                           maxFreq={maxFreq}
@@ -416,7 +443,7 @@ export default function FrequencyGenerator() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setIsFullscreen(false)}
+              onClick={exitFullscreen}
               className="text-white bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full w-12 h-12"
             >
               <Minimize2 className="w-6 h-6" />
