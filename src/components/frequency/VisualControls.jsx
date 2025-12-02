@@ -21,29 +21,39 @@ export default function VisualControls({
   setBloom
 }) {
   const visualStyles = [
-    { value: 'fractal', label: 'Fractal', icon: '✧' },
-    { value: 'tunnel', label: 'Tunnel', icon: '◎' },
-    { value: 'kaleidoscope', label: 'Kaleidoscope', icon: '❋' },
-    { value: 'plasma', label: 'Plasma', icon: '◈' },
-    { value: 'waveform', label: 'Waveform', icon: '∿' },
-    { value: 'particles', label: 'Particles', icon: '✦' },
-    { value: 'geometric', label: 'Geometric', icon: '⬡' },
-    { value: 'spiral', label: 'Spiral', icon: '🌀' },
-    { value: 'matrix', label: 'Matrix', icon: '▦' },
-    { value: 'nebula', label: 'Nebula', icon: '☁' },
-    { value: 'rings', label: 'Rings', icon: '◉' },
-    { value: 'hexgrid', label: 'Hex Grid', icon: '⬢' },
-    { value: 'chladni', label: 'Chladni', icon: '◫' },
-  ];
+        { value: 'fractal', label: 'Fractal', icon: '✧' },
+        { value: 'tunnel', label: 'Tunnel', icon: '◎' },
+        { value: 'kaleidoscope', label: 'Kaleidoscope', icon: '❋' },
+        { value: 'plasma', label: 'Plasma', icon: '◈' },
+        { value: 'waveform', label: 'Waveform', icon: '∿' },
+        { value: 'particles', label: 'Particles', icon: '✦' },
+        { value: 'geometric', label: 'Geometric', icon: '⬡' },
+        { value: 'spiral', label: 'Spiral', icon: '🌀' },
+        { value: 'matrix', label: 'Matrix', icon: '▦' },
+        { value: 'nebula', label: 'Nebula', icon: '☁' },
+        { value: 'rings', label: 'Rings', icon: '◉' },
+        { value: 'hexgrid', label: 'Hex Grid', icon: '⬢' },
+        { value: 'chladni', label: 'Chladni', icon: '◫' },
+        { value: 'aurora', label: 'Aurora', icon: '🌌' },
+        { value: 'fireworks', label: 'Fireworks', icon: '🎆' },
+        { value: 'mandala', label: 'Mandala', icon: '☸' },
+        { value: 'liquid', label: 'Liquid', icon: '💧' },
+        { value: 'electric', label: 'Electric', icon: '⚡' },
+      ];
 
   const colorPalettes = [
-    { value: 'cyber', label: 'Cyber', colors: ['#00f0ff', '#ff00aa', '#7b00ff'] },
-    { value: 'fire', label: 'Fire', colors: ['#ff4400', '#ff8800', '#ffcc00'] },
-    { value: 'nature', label: 'Nature', colors: ['#00ff88', '#88ff00', '#00ffcc'] },
-    { value: 'ocean', label: 'Ocean', colors: ['#0044ff', '#0088ff', '#00ccff'] },
-    { value: 'sunset', label: 'Sunset', colors: ['#ff6644', '#ff44aa', '#ffaa44'] },
-    { value: 'neon', label: 'Neon', colors: ['#ff00ff', '#00ffff', '#ffff00'] },
-  ];
+        { value: 'cyber', label: 'Cyber', colors: ['#00f0ff', '#ff00aa', '#7b00ff'] },
+        { value: 'fire', label: 'Fire', colors: ['#ff4400', '#ff8800', '#ffcc00'] },
+        { value: 'nature', label: 'Nature', colors: ['#00ff88', '#88ff00', '#00ffcc'] },
+        { value: 'ocean', label: 'Ocean', colors: ['#0044ff', '#0088ff', '#00ccff'] },
+        { value: 'sunset', label: 'Sunset', colors: ['#ff6644', '#ff44aa', '#ffaa44'] },
+        { value: 'neon', label: 'Neon', colors: ['#ff00ff', '#00ffff', '#ffff00'] },
+        { value: 'aurora', label: 'Aurora', colors: ['#00ff99', '#6600ff', '#00ccff'] },
+        { value: 'lava', label: 'Lava', colors: ['#ff0000', '#ff6600', '#330000'] },
+        { value: 'ice', label: 'Ice', colors: ['#aaffff', '#4488ff', '#ffffff'] },
+        { value: 'candy', label: 'Candy', colors: ['#ff69b4', '#ff1493', '#ff88cc'] },
+        { value: 'galaxy', label: 'Galaxy', colors: ['#9933ff', '#ff33cc', '#3366ff'] },
+      ];
 
   const sliderConfig = [
     { key: 'speed', label: 'Speed', icon: Zap, value: speed, setValue: setSpeed, min: 0.1, max: 3, step: 0.1 },

@@ -109,21 +109,66 @@ export default function WebGLVisualizer({
       }
       
       vec3 paletteNeon(float t) {
-        vec3 a = vec3(0.5, 0.5, 0.5);
-        vec3 b = vec3(0.5, 0.5, 0.5);
-        vec3 c = vec3(1.0, 1.0, 1.0);
-        vec3 d = vec3(0.0, 0.10, 0.20);
-        return a + b * cos(TAU * (c * t + d));
-      }
-      
-      vec3 getColor(float t) {
-        if (u_colorPalette == 0) return paletteCyber(t);
-        if (u_colorPalette == 1) return paletteFire(t);
-        if (u_colorPalette == 2) return paletteNature(t);
-        if (u_colorPalette == 3) return paletteOcean(t);
-        if (u_colorPalette == 4) return paletteSunset(t);
-        return paletteNeon(t);
-      }
+                    vec3 a = vec3(0.5, 0.5, 0.5);
+                    vec3 b = vec3(0.5, 0.5, 0.5);
+                    vec3 c = vec3(1.0, 1.0, 1.0);
+                    vec3 d = vec3(0.0, 0.10, 0.20);
+                    return a + b * cos(TAU * (c * t + d));
+                  }
+
+                  vec3 paletteAurora(float t) {
+                    vec3 a = vec3(0.5, 0.5, 0.5);
+                    vec3 b = vec3(0.5, 0.5, 0.5);
+                    vec3 c = vec3(1.0, 1.0, 0.5);
+                    vec3 d = vec3(0.25, 0.4, 0.55);
+                    return a + b * cos(TAU * (c * t + d));
+                  }
+
+                  vec3 paletteLava(float t) {
+                    vec3 a = vec3(0.5, 0.2, 0.1);
+                    vec3 b = vec3(0.5, 0.4, 0.2);
+                    vec3 c = vec3(1.0, 0.7, 0.4);
+                    vec3 d = vec3(0.0, 0.05, 0.1);
+                    return a + b * cos(TAU * (c * t + d));
+                  }
+
+                  vec3 paletteIce(float t) {
+                    vec3 a = vec3(0.7, 0.8, 0.9);
+                    vec3 b = vec3(0.3, 0.3, 0.3);
+                    vec3 c = vec3(1.0, 1.0, 1.0);
+                    vec3 d = vec3(0.5, 0.6, 0.7);
+                    return a + b * cos(TAU * (c * t + d));
+                  }
+
+                  vec3 paletteCandy(float t) {
+                    vec3 a = vec3(0.8, 0.5, 0.7);
+                    vec3 b = vec3(0.3, 0.4, 0.3);
+                    vec3 c = vec3(1.0, 0.8, 1.0);
+                    vec3 d = vec3(0.0, 0.25, 0.33);
+                    return a + b * cos(TAU * (c * t + d));
+                  }
+
+                  vec3 paletteGalaxy(float t) {
+                    vec3 a = vec3(0.5, 0.3, 0.6);
+                    vec3 b = vec3(0.5, 0.5, 0.5);
+                    vec3 c = vec3(1.0, 0.8, 1.2);
+                    vec3 d = vec3(0.3, 0.2, 0.5);
+                    return a + b * cos(TAU * (c * t + d));
+                  }
+
+                  vec3 getColor(float t) {
+                    if (u_colorPalette == 0) return paletteCyber(t);
+                    if (u_colorPalette == 1) return paletteFire(t);
+                    if (u_colorPalette == 2) return paletteNature(t);
+                    if (u_colorPalette == 3) return paletteOcean(t);
+                    if (u_colorPalette == 4) return paletteSunset(t);
+                    if (u_colorPalette == 5) return paletteNeon(t);
+                    if (u_colorPalette == 6) return paletteAurora(t);
+                    if (u_colorPalette == 7) return paletteLava(t);
+                    if (u_colorPalette == 8) return paletteIce(t);
+                    if (u_colorPalette == 9) return paletteCandy(t);
+                    return paletteGalaxy(t);
+                  }
       
       float hash(vec2 p) {
         return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -481,7 +526,142 @@ export default function WebGLVisualizer({
         return col;
       }
       
-      vec3 styleChladni(vec2 uv, float time, float freqNorm, float audioSum) {
+      vec3 styleAurora(vec2 uv, float time, float freqNorm, float audioSum) {
+              vec3 col = vec3(0.0);
+              float f = freqNorm * 3.0;
+              
+              vec2 p = uv;
+              p.y += 0.5;
+              
+              for (float i = 0.0; i < 5.0; i++) {
+                float wave = sin(p.x * (3.0 + i) + time * u_speed * (0.5 + i * 0.2) + f * 5.0);
+                wave += sin(p.x * (5.0 + i * 2.0) - time * u_speed * 0.3) * 0.5;
+                wave *= 0.15 + f * 0.1;
+                
+                float dist = abs(p.y - wave - i * 0.15);
+                float glow = 0.02 / dist;
+                glow *= 1.0 + audioSum;
+                
+                col += getColor(i * 0.2 + time * 0.1 + f) * glow * u_intensity * 0.5;
+              }
+              
+              col += getColor(f + time * 0.05) * exp(-length(uv) * 1.5) * u_bloom;
+              return col;
+            }
+            
+            vec3 styleFireworks(vec2 uv, float time, float freqNorm, float audioSum) {
+              vec3 col = vec3(0.0);
+              float f = freqNorm * 4.0;
+              
+              for (float i = 0.0; i < 8.0; i++) {
+                float t = fract(time * u_speed * 0.3 + i * 0.125);
+                vec2 center = vec2(sin(i * 3.14) * 0.6, cos(i * 2.71) * 0.4);
+                
+                float explosion = smoothstep(0.0, 0.3, t) * smoothstep(1.0, 0.5, t);
+                float radius = t * (1.0 + f);
+                
+                for (float j = 0.0; j < 12.0; j++) {
+                  float angle = j * TAU / 12.0 + i;
+                  vec2 particlePos = center + vec2(cos(angle), sin(angle)) * radius;
+                  particlePos.y -= t * t * 0.5;
+                  
+                  float dist = length(uv - particlePos);
+                  float spark = 0.01 / dist * explosion;
+                  spark *= 1.0 + audioSum;
+                  
+                  col += getColor(i * 0.15 + j * 0.05 + f) * spark * u_intensity;
+                }
+              }
+              
+              col += getColor(time * 0.1 + f) * exp(-length(uv) * 2.0) * u_bloom * 0.5;
+              return col;
+            }
+            
+            vec3 styleMandala(vec2 uv, float time, float freqNorm, float audioSum) {
+              vec3 col = vec3(0.0);
+              float f = freqNorm * 4.0;
+              float angle = atan(uv.y, uv.x);
+              float radius = length(uv);
+              
+              float segments = u_symmetry * 2.0 + f * 4.0;
+              angle = mod(angle, TAU / segments);
+              angle = abs(angle - PI / segments);
+              
+              for (float i = 1.0; i < 6.0; i++) {
+                float r = i * 0.18 * (1.0 + sin(time * u_speed + i) * 0.1 * (1.0 + f));
+                float pattern = sin(angle * segments * i + time * u_speed * 0.5) * 0.5 + 0.5;
+                pattern *= sin(radius * 20.0 * u_complexity - time * u_speed + f * 10.0) * 0.5 + 0.5;
+                
+                float ring = smoothstep(0.03, 0.0, abs(radius - r));
+                ring *= pattern * (1.0 + audioSum);
+                
+                col += getColor(i * 0.15 + f * 2.0 + time * 0.1) * ring * u_intensity;
+              }
+              
+              col += getColor(f + time * 0.1) * exp(-radius * 3.0) * u_bloom;
+              return col;
+            }
+            
+            vec3 styleLiquid(vec2 uv, float time, float freqNorm, float audioSum) {
+              vec3 col = vec3(0.0);
+              float f = freqNorm * 3.0;
+              
+              vec2 p = uv * (2.0 + f);
+              float t = time * u_speed * 0.5;
+              
+              float n1 = sin(p.x * 3.0 + t) * cos(p.y * 3.0 + t * 0.7);
+              float n2 = sin(p.x * 5.0 - t * 0.8 + n1) * cos(p.y * 4.0 + t * 0.5);
+              float n3 = sin(p.x * 2.0 + t * 1.2 + n2 * 2.0) * cos(p.y * 6.0 - t * 0.3);
+              
+              float liquid = (n1 + n2 + n3) / 3.0;
+              liquid = liquid * 0.5 + 0.5;
+              liquid = pow(liquid, 1.5 - f * 0.3);
+              liquid *= 1.0 + audioSum * 0.5;
+              
+              col = getColor(liquid + f * 2.0 + time * 0.05) * liquid * u_intensity;
+              
+              float highlight = pow(max(0.0, liquid - 0.7) * 3.0, 2.0);
+              col += vec3(1.0) * highlight * 0.3;
+              
+              col += getColor(f + time * 0.1) * exp(-length(uv) * 1.5) * u_bloom;
+              return col;
+            }
+            
+            vec3 styleElectric(vec2 uv, float time, float freqNorm, float audioSum) {
+              vec3 col = vec3(0.0);
+              float f = freqNorm * 5.0;
+              
+              for (float i = 0.0; i < 5.0; i++) {
+                vec2 start = vec2(-1.0, (i - 2.0) * 0.3);
+                vec2 end = vec2(1.0, (i - 2.0) * 0.3 + sin(time * u_speed + i) * 0.2);
+                
+                float segments = 20.0;
+                vec2 prev = start;
+                
+                for (float j = 1.0; j <= 20.0; j++) {
+                  float t = j / segments;
+                  vec2 pos = mix(start, end, t);
+                  float offset = sin(t * 30.0 + time * u_speed * 10.0 + i * 5.0 + f * 20.0) * 0.1;
+                  offset *= sin(t * PI) * (1.0 + audioSum + f);
+                  pos.y += offset;
+                  
+                  float dist = length(uv - pos);
+                  float bolt = 0.005 / dist;
+                  bolt *= 1.0 + audioSum;
+                  
+                  col += getColor(i * 0.2 + t + f * 2.0 + time * 0.1) * bolt * u_intensity;
+                  prev = pos;
+                }
+              }
+              
+              float flash = pow(sin(time * u_speed * 5.0) * 0.5 + 0.5, 8.0) * audioSum;
+              col += getColor(f + time * 0.2) * flash * 0.3;
+              
+              col += getColor(f * 2.0 + time * 0.1) * exp(-length(uv) * 2.0) * u_bloom;
+              return col;
+            }
+            
+            vec3 styleChladni(vec2 uv, float time, float freqNorm, float audioSum) {
         // Animated Chladni plate simulation - sand patterns on vibrating metal
         vec3 col = vec3(0.0);
         
@@ -632,9 +812,17 @@ export default function WebGLVisualizer({
           finalColor = styleRings(uv, time, freqNorm, audioSum);
         } else if (u_visualStyle == 11) {
           finalColor = styleHexgrid(uv, time, freqNorm, audioSum);
-        } else {
-          finalColor = styleChladni(uv, time, freqNorm, audioSum);
-        }
+        } else if (u_visualStyle == 13) {
+                        finalColor = styleAurora(uv, time, freqNorm, audioSum);
+                      } else if (u_visualStyle == 14) {
+                        finalColor = styleFireworks(uv, time, freqNorm, audioSum);
+                      } else if (u_visualStyle == 15) {
+                        finalColor = styleMandala(uv, time, freqNorm, audioSum);
+                      } else if (u_visualStyle == 16) {
+                        finalColor = styleLiquid(uv, time, freqNorm, audioSum);
+                      } else {
+                        finalColor = styleElectric(uv, time, freqNorm, audioSum);
+                      }
         
         vec3 glowColor = getColor(freqNorm + time * 0.1);
         float glow = exp(-length(uv0) * (2.0 - freqNorm)) * u_bloom;
@@ -723,8 +911,8 @@ export default function WebGLVisualizer({
           const isochronicDepthLocation = gl.getUniformLocation(program, 'u_isochronicDepth');
 
           const waveTypes = { sine: 0, square: 1, sawtooth: 2, triangle: 3 };
-    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12 };
-    const colorPalettes = { cyber: 0, fire: 1, nature: 2, ocean: 3, sunset: 4, neon: 5 };
+    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12, aurora: 13, fireworks: 14, mandala: 15, liquid: 16, electric: 17 };
+          const colorPalettes = { cyber: 0, fire: 1, nature: 2, ocean: 3, sunset: 4, neon: 5, aurora: 6, lava: 7, ice: 8, candy: 9, galaxy: 10 };
 
     const render = () => {
       const canvas = canvasRef.current;
