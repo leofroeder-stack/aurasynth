@@ -67,10 +67,10 @@ export default function AudioControls({
   return (
     <div className="space-y-8 relative">
       {/* Top bar with Therapy on left, controls on right */}
-      <div className="flex items-center justify-between -mt-2">
+      <div className="flex items-center justify-between -mt-2 flex-wrap gap-2">
         <TherapyFrequencyPicker onSelectFrequency={setFrequency} />
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3 flex-wrap">
           {onOpenVisuals && (
             <Button
               variant="ghost"
@@ -79,11 +79,11 @@ export default function AudioControls({
               className="text-gray-400 hover:text-white hover:bg-white/10 gap-2"
             >
               <Settings2 className="w-4 h-4" />
-              <span className="text-xs">Visuals</span>
+              <span className="text-xs hidden md:inline">Visuals</span>
             </Button>
           )}
           {recordingControls}
-          <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${
               isPlaying ? 'bg-cyan-400 animate-pulse' : 'bg-gray-600'
             }`} />
@@ -96,7 +96,7 @@ export default function AudioControls({
               variant="ghost"
               size="icon"
               onClick={onHidePanel}
-              className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full"
+              className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full w-10 h-10 md:w-auto md:h-auto"
             >
               <X className="w-5 h-5" />
             </Button>
