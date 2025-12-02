@@ -371,7 +371,7 @@ export default function FrequencyGenerator() {
                     setWaveType={setWaveType}
                     isPlaying={isPlaying}
                     togglePlay={togglePlay}
-                    onHidePanel={() => setIsFullscreen(true)}
+                    onFullscreen={() => setIsFullscreen(true)}
                     onOpenVisuals={() => setShowVisualControls(true)}
                     minFreq={minFreq}
                                           maxFreq={maxFreq}
