@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Play, Pause, Volume2, Waves, Edit3, X, Settings2 } from "lucide-react";
 import { motion } from "framer-motion";
+import TherapyFrequencyPicker from './TherapyFrequencyPicker';
 
 export default function AudioControls({ 
   frequency, 
@@ -227,7 +228,7 @@ export default function AudioControls({
       </div>
 
       {/* Fine Tune Controls */}
-      <div className="flex justify-center gap-2 flex-wrap">
+      <div className="flex justify-center items-center gap-2 flex-wrap">
         {[-100, -10, -1, 1, 10, 100].map((delta) => (
           <Button
             key={delta}
@@ -239,6 +240,7 @@ export default function AudioControls({
             {delta > 0 ? '+' : ''}{delta}
           </Button>
         ))}
+        <TherapyFrequencyPicker onSelectFrequency={setFrequency} />
       </div>
     </div>
   );
