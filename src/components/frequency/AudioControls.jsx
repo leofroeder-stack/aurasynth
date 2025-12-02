@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Play, Pause, Volume2, Waves, Edit3 } from "lucide-react";
+import { Play, Pause, Volume2, Waves, Edit3, X } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function AudioControls({ 
@@ -15,7 +15,8 @@ export default function AudioControls({
   waveType, 
   setWaveType, 
   isPlaying, 
-  togglePlay 
+  togglePlay,
+  onHidePanel
 }) {
   const [customFreqOpen, setCustomFreqOpen] = useState(false);
   const [customFreqValue, setCustomFreqValue] = useState('');
