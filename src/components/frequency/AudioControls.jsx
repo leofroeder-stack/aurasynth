@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Pause, Volume2, Waves } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Play, Pause, Volume2, Waves, Edit3 } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function AudioControls({ 
@@ -15,6 +17,18 @@ export default function AudioControls({
   isPlaying, 
   togglePlay 
 }) {
+  const [customFreqOpen, setCustomFreqOpen] = useState(false);
+  const [customFreqValue, setCustomFreqValue] = useState('');
+
+  const handleCustomFreqSubmit = () => {
+    const val = parseFloat(customFreqValue);
+    if (!isNaN(val) && val >= 20 && val <= 20000) {
+      setFrequency(Math.min(2000, Math.max(20, val)));
+      setCustomFreqOpen(false);
+      setCustomFreqValue('');
+    }
+  };
+
   const waveforms = [
     { value: 'sine', label: 'Sine', icon: '∿' },
     { value: 'square', label: 'Square', icon: '⊓' },
@@ -44,6 +58,42 @@ export default function AudioControls({
             {frequency.toFixed(1)}
           </span>
           <span className="text-2xl text-cyan-400 font-light">Hz</span>
+          <Dialog open={customFreqOpen} onOpenChange={setCustomFreqOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="ml-2 text-orange-500 hover:text-orange-400 hover:bg-orange-500/10"
+              >
+                <Edit3 className="w-6 h-6" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-gray-900 border-white/10 text-white">
+              <DialogHeader>
+                <DialogTitle>Enter Custom Frequency</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <Input
+                  type="number"
+                  placeholder="Enter frequency (20-20000 Hz)"
+                  value={customFreqValue}
+                  onChange={(e) => setCustomFreqValue(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCustomFreqSubmit()}
+                  className="bg-white/5 border-white/10 text-white text-lg"
+                  min={20}
+                  max={20000}
+                />
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setCustomFreqOpen(false)} className="border-white/10 text-gray-300">
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCustomFreqSubmit} className="bg-cyan-600 hover:bg-cyan-700">
+                    Set Frequency
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </motion.div>
 
