@@ -12,7 +12,12 @@ export default function WebGLVisualizer({
   complexity = 1,
   symmetry = 4,
   bloom = 0.5,
-  canvasRef: externalCanvasRef
+  canvasRef: externalCanvasRef,
+  binauralEnabled = false,
+  binauralFreq = 10,
+  isochronicEnabled = false,
+  isochronicFreq = 10,
+  isochronicDepth = 0.8
 }) {
   const internalCanvasRef = useRef(null);
   const canvasRef = externalCanvasRef || internalCanvasRef;
@@ -54,8 +59,13 @@ export default function WebGLVisualizer({
       uniform float u_complexity;
       uniform float u_symmetry;
       uniform float u_bloom;
-      
-      #define PI 3.14159265359
+              uniform float u_binauralEnabled;
+              uniform float u_binauralFreq;
+              uniform float u_isochronicEnabled;
+              uniform float u_isochronicFreq;
+              uniform float u_isochronicDepth;
+
+              #define PI 3.14159265359
       #define TAU 6.28318530718
       
       vec3 paletteCyber(float t) {
@@ -573,8 +583,24 @@ export default function WebGLVisualizer({
         
         float time = u_time * u_speed;
         float freqNorm = u_frequency / 2000.0;
-        
-        float audioSum = 0.0;
+
+                  // Binaural beat modulation
+                  float binauralMod = 1.0;
+                  if (u_binauralEnabled > 0.5) {
+                    binauralMod = 1.0 + sin(time * u_binauralFreq * TAU) * 0.3;
+                    uv *= 1.0 + sin(time * u_binauralFreq * TAU) * 0.05;
+                    uv = uv * mat2(cos(sin(time * u_binauralFreq) * 0.1), -sin(sin(time * u_binauralFreq) * 0.1), 
+                                   sin(sin(time * u_binauralFreq) * 0.1), cos(sin(time * u_binauralFreq) * 0.1));
+                  }
+
+                  // Isochronic pulse modulation
+                  float isochronicMod = 1.0;
+                  if (u_isochronicEnabled > 0.5) {
+                    float pulse = (sin(time * u_isochronicFreq * TAU) + 1.0) * 0.5;
+                    isochronicMod = 1.0 - u_isochronicDepth * (1.0 - pulse);
+                  }
+
+                  float audioSum = 0.0;
         for (int i = 0; i < 32; i++) {
           audioSum += u_audioData[i];
         }
@@ -615,10 +641,27 @@ export default function WebGLVisualizer({
         finalColor += glowColor * glow * u_amplitude * 0.3;
         
         float vignette = 1.0 - length(uv0) * 0.4;
-        finalColor *= vignette;
-        
-        finalColor = clamp(finalColor, 0.0, 1.0);
-        gl_FragColor = vec4(finalColor, 1.0);
+                  finalColor *= vignette;
+
+                  // Apply beat modulations
+                  finalColor *= binauralMod * isochronicMod;
+
+                  // Add pulsing glow for isochronic
+                  if (u_isochronicEnabled > 0.5) {
+                    float pulse = (sin(time * u_isochronicFreq * TAU) + 1.0) * 0.5;
+                    vec3 pulseColor = getColor(time * 0.1 + pulse);
+                    finalColor += pulseColor * pulse * u_isochronicDepth * 0.2 * u_bloom;
+                  }
+
+                  // Add stereo-like color shift for binaural
+                  if (u_binauralEnabled > 0.5) {
+                    float shift = sin(time * u_binauralFreq * TAU) * 0.5;
+                    finalColor.r *= 1.0 + shift * 0.2;
+                    finalColor.b *= 1.0 - shift * 0.2;
+                  }
+
+                  finalColor = clamp(finalColor, 0.0, 1.0);
+                  gl_FragColor = vec4(finalColor, 1.0);
       }
     `;
 
@@ -673,8 +716,13 @@ export default function WebGLVisualizer({
     const complexityLocation = gl.getUniformLocation(program, 'u_complexity');
     const symmetryLocation = gl.getUniformLocation(program, 'u_symmetry');
     const bloomLocation = gl.getUniformLocation(program, 'u_bloom');
+          const binauralEnabledLocation = gl.getUniformLocation(program, 'u_binauralEnabled');
+          const binauralFreqLocation = gl.getUniformLocation(program, 'u_binauralFreq');
+          const isochronicEnabledLocation = gl.getUniformLocation(program, 'u_isochronicEnabled');
+          const isochronicFreqLocation = gl.getUniformLocation(program, 'u_isochronicFreq');
+          const isochronicDepthLocation = gl.getUniformLocation(program, 'u_isochronicDepth');
 
-    const waveTypes = { sine: 0, square: 1, sawtooth: 2, triangle: 3 };
+          const waveTypes = { sine: 0, square: 1, sawtooth: 2, triangle: 3 };
     const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12 };
     const colorPalettes = { cyber: 0, fire: 1, nature: 2, ocean: 3, sunset: 4, neon: 5 };
 
@@ -711,8 +759,13 @@ export default function WebGLVisualizer({
       gl.uniform1f(complexityLocation, complexity);
       gl.uniform1f(symmetryLocation, symmetry);
       gl.uniform1f(bloomLocation, bloom);
+              gl.uniform1f(binauralEnabledLocation, binauralEnabled ? 1.0 : 0.0);
+              gl.uniform1f(binauralFreqLocation, binauralFreq);
+              gl.uniform1f(isochronicEnabledLocation, isochronicEnabled ? 1.0 : 0.0);
+              gl.uniform1f(isochronicFreqLocation, isochronicFreq);
+              gl.uniform1f(isochronicDepthLocation, isochronicDepth);
 
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
+              gl.drawArrays(gl.TRIANGLES, 0, 6);
 
       animationRef.current = requestAnimationFrame(render);
     };
@@ -724,7 +777,7 @@ export default function WebGLVisualizer({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [frequency, isPlaying, waveType, analyserNode, visualStyle, colorPalette, speed, intensity, complexity, symmetry, bloom]);
+  }, [frequency, isPlaying, waveType, analyserNode, visualStyle, colorPalette, speed, intensity, complexity, symmetry, bloom, binauralEnabled, binauralFreq, isochronicEnabled, isochronicFreq, isochronicDepth]);
 
   return (
     <canvas

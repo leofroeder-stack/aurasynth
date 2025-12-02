@@ -289,19 +289,24 @@ export default function FrequencyGenerator() {
       {/* WebGL Background */}
       <div className="absolute inset-0 pointer-events-none">
         <WebGLVisualizer
-          frequency={frequency}
-          isPlaying={isPlaying}
-          waveType={waveType}
-          analyserNode={analyserNode}
-          visualStyle={visualStyle}
-          colorPalette={colorPalette}
-          speed={speed}
-          intensity={intensity}
-          complexity={complexity}
-          symmetry={symmetry}
-          bloom={bloom}
-          canvasRef={canvasRef}
-        />
+                        frequency={frequency}
+                        isPlaying={isPlaying}
+                        waveType={waveType}
+                        analyserNode={analyserNode}
+                        visualStyle={visualStyle}
+                        colorPalette={colorPalette}
+                        speed={speed}
+                        intensity={intensity}
+                        complexity={complexity}
+                        symmetry={symmetry}
+                        bloom={bloom}
+                        canvasRef={canvasRef}
+                        binauralEnabled={binauralEnabled}
+                        binauralFreq={binauralFreq}
+                        isochronicEnabled={isochronicEnabled}
+                        isochronicFreq={isochronicFreq}
+                        isochronicDepth={isochronicDepth}
+                      />
       </div>
 
       {/* Overlay gradient for readability */}
