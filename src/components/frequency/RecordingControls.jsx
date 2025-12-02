@@ -220,9 +220,19 @@ export default function RecordingControls({
       <Dialog open={showRecordings} onOpenChange={setShowRecordings}>
         <DialogContent className="bg-gray-900 border-white/10 text-white max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Circle className="w-4 h-4 text-red-500" />
-              Recordings ({recordings.length})
+            <DialogTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Circle className="w-4 h-4 text-red-500" />
+                Recordings ({recordings.length})
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowRecordings(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </Button>
             </DialogTitle>
           </DialogHeader>
           

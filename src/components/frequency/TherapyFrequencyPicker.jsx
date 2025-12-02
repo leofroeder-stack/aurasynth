@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Heart } from "lucide-react";
+import { Heart, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { frequencyCategories } from './sound_therapy_frequencies';
 
@@ -29,9 +29,19 @@ export default function TherapyFrequencyPicker({ onSelectFrequency }) {
       </DialogTrigger>
       <DialogContent className="bg-gray-900 border-white/10 text-white max-w-2xl max-h-[80vh]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Heart className="w-5 h-5 text-pink-400" />
-            Therapy Frequencies
+          <DialogTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Heart className="w-5 h-5 text-pink-400" />
+              Therapy Frequencies
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setOpen(false)}
+              className="text-gray-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </Button>
           </DialogTitle>
         </DialogHeader>
         

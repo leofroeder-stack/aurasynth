@@ -117,8 +117,18 @@ export default function AudioControls({
             </DialogTrigger>
             <DialogContent className="bg-gray-900 border-white/10 text-white">
               <DialogHeader>
-                <DialogTitle>Enter Custom Frequency</DialogTitle>
-              </DialogHeader>
+                  <DialogTitle className="flex items-center justify-between">
+                    <span>Enter Custom Frequency</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setCustomFreqOpen(false)}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      <X className="w-5 h-5" />
+                    </Button>
+                  </DialogTitle>
+                </DialogHeader>
               <div className="space-y-4 pt-4">
                 <Input
                   type="number"
