@@ -196,6 +196,8 @@ export default function FrequencyGenerator() {
     audioElementRef.current.play();
   }, [audioFile, initAudio]);
 
+  const fullscreenTimerRef = useRef(null);
+
   const togglePlay = useCallback(() => {
     if (isPlaying) {
       if (audioFile) {
@@ -203,12 +205,21 @@ export default function FrequencyGenerator() {
       } else {
         stopOscillator();
       }
+      // Clear fullscreen timer when stopping
+      if (fullscreenTimerRef.current) {
+        clearTimeout(fullscreenTimerRef.current);
+        fullscreenTimerRef.current = null;
+      }
     } else {
       if (audioFile) {
         startAudioFile();
       } else {
         startOscillator();
       }
+      // Auto fullscreen after 5 seconds
+      fullscreenTimerRef.current = setTimeout(() => {
+        setIsFullscreen(true);
+      }, 5000);
     }
     setIsPlaying(!isPlaying);
   }, [isPlaying, audioFile, startOscillator, stopOscillator, startAudioFile, stopAudioFile]);
@@ -271,6 +282,9 @@ export default function FrequencyGenerator() {
       stopAudioFile();
       if (audioContextRef.current) {
         audioContextRef.current.close();
+      }
+      if (fullscreenTimerRef.current) {
+        clearTimeout(fullscreenTimerRef.current);
       }
     };
   }, [stopOscillator, stopAudioFile]);
@@ -392,21 +406,20 @@ export default function FrequencyGenerator() {
           )}
         </AnimatePresence>
 
-        {/* Fullscreen toggle - only visible in fullscreen mode */}
+        {/* Fullscreen exit button - always visible in fullscreen mode */}
         {isFullscreen && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute top-6 right-6 opacity-0 hover:opacity-100 transition-opacity duration-300"
+            className="absolute top-4 right-4 md:top-6 md:right-6 z-50"
           >
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={() => setIsFullscreen(false)}
-              className="text-gray-400 hover:text-white hover:bg-white/10"
+              className="text-white bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full w-12 h-12"
             >
-              <Minimize2 className="w-4 h-4" />
-              <span className="ml-2 text-xs">Exit</span>
+              <Minimize2 className="w-6 h-6" />
             </Button>
           </motion.div>
         )}
