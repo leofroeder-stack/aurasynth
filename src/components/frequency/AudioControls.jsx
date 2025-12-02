@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Play, Pause, Volume2, Waves, Edit3, X } from "lucide-react";
+import { Play, Pause, Volume2, Waves, Edit3, X, Settings2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function AudioControls({ 
@@ -16,7 +16,8 @@ export default function AudioControls({
   setWaveType, 
   isPlaying, 
   togglePlay,
-  onHidePanel
+  onHidePanel,
+  onOpenVisuals
 }) {
   const [customFreqOpen, setCustomFreqOpen] = useState(false);
   const [customFreqValue, setCustomFreqValue] = useState('');
@@ -48,17 +49,29 @@ export default function AudioControls({
 
   return (
     <div className="space-y-8 relative">
-      {/* Close Button */}
-      {onHidePanel && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onHidePanel}
-          className="absolute -top-2 -right-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full"
-        >
-          <X className="w-5 h-5" />
-        </Button>
-      )}
+      {/* Top buttons */}
+      <div className="absolute -top-2 -right-2 flex items-center gap-2">
+        {onOpenVisuals && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onOpenVisuals}
+            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full"
+          >
+            <Settings2 className="w-5 h-5" />
+          </Button>
+        )}
+        {onHidePanel && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onHidePanel}
+            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        )}
+      </div>
       
       {/* Main Frequency Display */}
       <motion.div 

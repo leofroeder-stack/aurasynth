@@ -1,17 +1,35 @@
 import React, { useState, useRef, useCallback } from 'react';
 
-export default function FrequencyOverlay({ frequency, setFrequency }) {
+export default function FrequencyOverlay({ frequency, setFrequency, onDoubleTap }) {
   const [isDragging, setIsDragging] = useState(false);
   const [showFrequency, setShowFrequency] = useState(false);
   const startXRef = useRef(0);
   const startFreqRef = useRef(frequency);
+  const lastTapRef = useRef(0);
+  const tapTimeoutRef = useRef(null);
 
   const handleStart = useCallback((clientX) => {
-    setIsDragging(true);
-    setShowFrequency(true);
-    startXRef.current = clientX;
-    startFreqRef.current = frequency;
-  }, [frequency]);
+    const now = Date.now();
+    const timeSinceLastTap = now - lastTapRef.current;
+    
+    if (timeSinceLastTap < 300) {
+      // Double tap detected
+      if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
+      onDoubleTap?.();
+      lastTapRef.current = 0;
+      return;
+    }
+    
+    lastTapRef.current = now;
+    
+    // Delay drag start to detect double tap
+    tapTimeoutRef.current = setTimeout(() => {
+      setIsDragging(true);
+      setShowFrequency(true);
+      startXRef.current = clientX;
+      startFreqRef.current = frequency;
+    }, 150);
+  }, [frequency, onDoubleTap]);
 
   const handleMove = useCallback((clientX) => {
     if (!isDragging) return;
@@ -23,6 +41,7 @@ export default function FrequencyOverlay({ frequency, setFrequency }) {
   }, [isDragging, setFrequency]);
 
   const handleEnd = useCallback(() => {
+    if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
     setIsDragging(false);
     setTimeout(() => setShowFrequency(false), 1000);
   }, []);

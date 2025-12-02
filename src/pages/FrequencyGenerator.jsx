@@ -134,6 +134,7 @@ export default function FrequencyGenerator() {
         <FrequencyOverlay 
           frequency={frequency}
           setFrequency={setFrequency}
+          onDoubleTap={() => setIsFullscreen(false)}
         />
       )}
 
@@ -203,6 +204,7 @@ export default function FrequencyGenerator() {
                     isPlaying={isPlaying}
                     togglePlay={togglePlay}
                     onHidePanel={() => setIsFullscreen(true)}
+                    onOpenVisuals={() => setShowVisualControls(true)}
                   />
                 </div>
               </div>
