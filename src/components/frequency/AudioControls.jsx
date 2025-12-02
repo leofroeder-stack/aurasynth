@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Play, Pause, Volume2, Waves, Edit3, X, Settings2, Upload } from "lucide-react";
+import { Play, Pause, Volume2, Waves, Edit3, X, Settings2, Upload, Maximize2 } from "lucide-react";
 import { motion } from "framer-motion";
 import TherapyFrequencyPicker from './TherapyFrequencyPicker';
 
@@ -19,6 +19,7 @@ export default function AudioControls({
   togglePlay,
   onHidePanel,
   onOpenVisuals,
+  onFullscreen,
   minFreq = 20,
   maxFreq = 20000,
   recordingControls,
@@ -91,14 +92,14 @@ export default function AudioControls({
               {isPlaying ? 'Playing' : 'Ready'}
             </span>
           </div>
-          {onHidePanel && (
+          {onFullscreen && (
             <Button
               variant="ghost"
               size="icon"
-              onClick={onHidePanel}
+              onClick={onFullscreen}
               className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full w-10 h-10 md:w-auto md:h-auto"
             >
-              <X className="w-5 h-5" />
+              <Maximize2 className="w-5 h-5" />
             </Button>
           )}
         </div>
