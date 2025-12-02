@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Settings2, X, Maximize2, Minimize2 } from "lucide-react";
+import FrequencyOverlay from '../components/frequency/FrequencyOverlay';
 import WebGLVisualizer from '../components/frequency/WebGLVisualizer';
 import AudioControls from '../components/frequency/AudioControls';
 import VisualControls from '../components/frequency/VisualControls';
@@ -128,8 +129,16 @@ export default function FrequencyGenerator() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white overflow-hidden relative">
+      {/* Fullscreen frequency control overlay */}
+      {isFullscreen && (
+        <FrequencyOverlay 
+          frequency={frequency}
+          setFrequency={setFrequency}
+        />
+      )}
+
       {/* WebGL Background */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 pointer-events-none">
         <WebGLVisualizer
           frequency={frequency}
           isPlaying={isPlaying}
