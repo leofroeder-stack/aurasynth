@@ -212,6 +212,14 @@ export default function FrequencyGenerator() {
                     onOpenVisuals={() => setShowVisualControls(true)}
                     minFreq={minFreq}
                     maxFreq={maxFreq}
+                    recordingControls={
+                      <RecordingControls
+                        audioContext={audioContextRef.current}
+                        gainNode={gainNodeRef.current}
+                        canvasRef={canvasRef}
+                        isPlaying={isPlaying}
+                      />
+                    }
                   />
                 </div>
               </div>
@@ -219,52 +227,24 @@ export default function FrequencyGenerator() {
           )}
         </AnimatePresence>
 
-        {/* Status indicator and Visual Controls Toggle */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className={`absolute top-6 right-6 flex items-center gap-4 ${isFullscreen ? 'opacity-0 hover:opacity-100 transition-opacity duration-300' : ''}`}
-        >
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className="text-gray-400 hover:text-white hover:bg-white/10"
+        {/* Fullscreen toggle - only visible in fullscreen mode */}
+        {isFullscreen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute top-6 right-6 opacity-0 hover:opacity-100 transition-opacity duration-300"
           >
-            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            <span className="ml-2 text-xs">{isFullscreen ? 'Exit' : 'Fullscreen'}</span>
-          </Button>
-          {!isFullscreen && (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowVisualControls(!showVisualControls)}
-                className={`text-gray-400 hover:text-white hover:bg-white/10 ${
-                  showVisualControls ? 'bg-white/10 text-white' : ''
-                }`}
-              >
-                {showVisualControls ? <X className="w-4 h-4" /> : <Settings2 className="w-4 h-4" />}
-                <span className="ml-2 text-xs">Visuals</span>
-              </Button>
-              <RecordingControls
-                audioContext={audioContextRef.current}
-                gainNode={gainNodeRef.current}
-                canvasRef={canvasRef}
-                isPlaying={isPlaying}
-              />
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${
-                  isPlaying ? 'bg-cyan-400 animate-pulse' : 'bg-gray-600'
-                }`} />
-                <span className="text-xs text-gray-500 uppercase tracking-wider">
-                  {isPlaying ? 'Playing' : 'Ready'}
-                </span>
-              </div>
-            </>
-          )}
-        </motion.div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsFullscreen(false)}
+              className="text-gray-400 hover:text-white hover:bg-white/10"
+            >
+              <Minimize2 className="w-4 h-4" />
+              <span className="ml-2 text-xs">Exit</span>
+            </Button>
+          </motion.div>
+        )}
 
         {/* Visual Controls Panel */}
         <AnimatePresence>

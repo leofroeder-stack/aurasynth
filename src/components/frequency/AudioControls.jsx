@@ -20,7 +20,8 @@ export default function AudioControls({
   onHidePanel,
   onOpenVisuals,
   minFreq = 20,
-  maxFreq = 20000
+  maxFreq = 20000,
+  recordingControls
 }) {
   const [customFreqOpen, setCustomFreqOpen] = useState(false);
   const [customFreqValue, setCustomFreqValue] = useState('');
@@ -55,28 +56,42 @@ export default function AudioControls({
 
   return (
     <div className="space-y-8 relative">
-      {/* Top buttons */}
-      <div className="absolute -top-2 -right-2 flex items-center gap-2">
-        {onOpenVisuals && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onOpenVisuals}
-            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full"
-          >
-            <Settings2 className="w-5 h-5" />
-          </Button>
-        )}
-        {onHidePanel && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onHidePanel}
-            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full"
-          >
-            <X className="w-5 h-5" />
-          </Button>
-        )}
+      {/* Top bar with Therapy on left, controls on right */}
+      <div className="flex items-center justify-between -mt-2">
+        <TherapyFrequencyPicker onSelectFrequency={setFrequency} />
+
+        <div className="flex items-center gap-3">
+          {onOpenVisuals && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onOpenVisuals}
+              className="text-gray-400 hover:text-white hover:bg-white/10 gap-2"
+            >
+              <Settings2 className="w-4 h-4" />
+              <span className="text-xs">Visuals</span>
+            </Button>
+          )}
+          {recordingControls}
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${
+              isPlaying ? 'bg-cyan-400 animate-pulse' : 'bg-gray-600'
+            }`} />
+            <span className="text-xs text-gray-500 uppercase tracking-wider">
+              {isPlaying ? 'Playing' : 'Ready'}
+            </span>
+          </div>
+          {onHidePanel && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onHidePanel}
+              className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          )}
+        </div>
       </div>
       
       {/* Main Frequency Display */}
@@ -240,8 +255,7 @@ export default function AudioControls({
             {delta > 0 ? '+' : ''}{delta}
           </Button>
         ))}
-        <TherapyFrequencyPicker onSelectFrequency={setFrequency} />
       </div>
-    </div>
+      </div>
   );
 }
