@@ -11,9 +11,11 @@ export default function WebGLVisualizer({
   intensity = 1,
   complexity = 1,
   symmetry = 4,
-  bloom = 0.5
+  bloom = 0.5,
+  canvasRef: externalCanvasRef
 }) {
-  const canvasRef = useRef(null);
+  const internalCanvasRef = useRef(null);
+  const canvasRef = externalCanvasRef || internalCanvasRef;
   const animationRef = useRef(null);
   const glRef = useRef(null);
   const programRef = useRef(null);

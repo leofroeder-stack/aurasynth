@@ -6,6 +6,7 @@ import FrequencyOverlay from '../components/frequency/FrequencyOverlay';
 import WebGLVisualizer from '../components/frequency/WebGLVisualizer';
 import AudioControls from '../components/frequency/AudioControls';
 import VisualControls from '../components/frequency/VisualControls';
+import RecordingControls from '../components/frequency/RecordingControls';
 
 export default function FrequencyGenerator() {
   const [frequency, setFrequency] = useState(440);
@@ -29,6 +30,7 @@ export default function FrequencyGenerator() {
   const oscillatorRef = useRef(null);
   const gainNodeRef = useRef(null);
   const analyserRef = useRef(null);
+  const canvasRef = useRef(null);
 
   const initAudio = useCallback(() => {
     if (!audioContextRef.current) {
@@ -152,6 +154,7 @@ export default function FrequencyGenerator() {
           complexity={complexity}
           symmetry={symmetry}
           bloom={bloom}
+          canvasRef={canvasRef}
         />
       </div>
 
@@ -241,6 +244,12 @@ export default function FrequencyGenerator() {
                 {showVisualControls ? <X className="w-4 h-4" /> : <Settings2 className="w-4 h-4" />}
                 <span className="ml-2 text-xs">Visuals</span>
               </Button>
+              <RecordingControls
+                audioContext={audioContextRef.current}
+                gainNode={gainNodeRef.current}
+                canvasRef={canvasRef}
+                isPlaying={isPlaying}
+              />
               <div className="flex items-center gap-2">
                 <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${
                   isPlaying ? 'bg-cyan-400 animate-pulse' : 'bg-gray-600'
