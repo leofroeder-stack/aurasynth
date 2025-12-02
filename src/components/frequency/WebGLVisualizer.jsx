@@ -352,6 +352,123 @@ export default function WebGLVisualizer({
         return col;
       }
       
+      vec3 styleSpiral(vec2 uv, float time, float freqNorm, float audioSum) {
+        vec3 col = vec3(0.0);
+        float f = freqNorm * 5.0;
+        float angle = atan(uv.y, uv.x);
+        float radius = length(uv);
+        
+        float arms = u_symmetry + f * 6.0;
+        float twist = radius * (5.0 + f * 15.0) - time * u_speed * (2.0 + f * 5.0);
+        float spiral = sin(angle * arms + twist) * 0.5 + 0.5;
+        spiral = pow(spiral, 2.0 - f);
+        
+        float pulse = sin(radius * (10.0 + f * 30.0) - time * (3.0 + f * 5.0)) * 0.5 + 0.5;
+        spiral *= pulse;
+        spiral *= 1.0 + audioSum;
+        
+        col = getColor(spiral + f * 3.0 + time * 0.1) * spiral * u_intensity;
+        col += getColor(angle / TAU + f) * exp(-radius * (3.0 - f)) * u_bloom;
+        
+        return col;
+      }
+      
+      vec3 styleMatrix(vec2 uv, float time, float freqNorm, float audioSum) {
+        vec3 col = vec3(0.0);
+        float f = freqNorm * 5.0;
+        
+        vec2 grid = uv * (5.0 + f * 10.0);
+        vec2 id = floor(grid);
+        vec2 gv = fract(grid) - 0.5;
+        
+        float speed = u_speed * (1.0 + f * 3.0);
+        float drop = fract(hash(id) + time * speed * (0.5 + hash(id.xx) * 0.5));
+        drop = smoothstep(0.0, 0.3, drop) * smoothstep(1.0, 0.7, drop);
+        
+        float glow = 0.1 / (length(gv) + 0.1);
+        glow *= drop * (1.0 + audioSum);
+        
+        vec3 matrixCol = getColor(hash(id) + f * 2.0 + time * 0.05);
+        col += matrixCol * glow * u_intensity;
+        
+        col += getColor(f) * exp(-length(uv) * (2.0 - f)) * u_bloom * 0.5;
+        
+        return col;
+      }
+      
+      vec3 styleNebula(vec2 uv, float time, float freqNorm, float audioSum) {
+        vec3 col = vec3(0.0);
+        float f = freqNorm * 5.0;
+        
+        vec2 p = uv * (2.0 + f * 2.0);
+        float t = time * u_speed * (0.3 + f);
+        
+        float n1 = fbm(p + t * 0.5, u_complexity);
+        float n2 = fbm(p * 2.0 - t * 0.3 + n1, u_complexity);
+        float n3 = fbm(p * 0.5 + t * 0.2 + n2 * 2.0, u_complexity);
+        
+        float nebula = n1 * 0.5 + n2 * 0.3 + n3 * 0.2;
+        nebula = pow(nebula, 1.5 - f * 0.5);
+        nebula *= 1.0 + audioSum * 0.5 + f * 0.5;
+        
+        col = getColor(nebula + f * 2.0 + time * 0.05) * nebula * u_intensity;
+        col += getColor(n1 + f) * n2 * 0.3;
+        col += getColor(time * 0.1 + f * 3.0) * exp(-length(uv) * (2.0 - f)) * u_bloom;
+        
+        return col;
+      }
+      
+      vec3 styleRings(vec2 uv, float time, float freqNorm, float audioSum) {
+        vec3 col = vec3(0.0);
+        float f = freqNorm * 5.0;
+        float radius = length(uv);
+        float angle = atan(uv.y, uv.x);
+        
+        float numRings = 8.0 + f * 12.0;
+        float ringSpeed = time * u_speed * (1.0 + f * 3.0);
+        
+        for (float i = 0.0; i < 10.0; i++) {
+          if (i >= numRings / 2.0) break;
+          float r = (i + 1.0) * 0.15 * (1.0 + sin(ringSpeed + i) * 0.2 * (1.0 + f));
+          r += sin(angle * u_symmetry + time * (1.0 + f * 2.0) + i) * 0.02 * (1.0 + f * 2.0);
+          
+          float ring = smoothstep(0.02 + f * 0.01, 0.0, abs(radius - r));
+          ring *= 1.0 + audioSum;
+          
+          col += getColor(i * 0.15 + f * 2.0 + time * 0.1) * ring * u_intensity;
+        }
+        
+        col += getColor(f * 3.0 + time * 0.1) * exp(-radius * (4.0 - f * 2.0)) * u_bloom;
+        
+        return col;
+      }
+      
+      vec3 styleHexgrid(vec2 uv, float time, float freqNorm, float audioSum) {
+        vec3 col = vec3(0.0);
+        float f = freqNorm * 5.0;
+        
+        vec2 p = uv * (3.0 + f * 5.0);
+        p = p * mat2(cos(time * u_speed * f * 0.5), -sin(time * u_speed * f * 0.5), sin(time * u_speed * f * 0.5), cos(time * u_speed * f * 0.5));
+        
+        vec2 h = vec2(1.0, 1.732);
+        vec2 a = mod(p, h) - h * 0.5;
+        vec2 b = mod(p + h * 0.5, h) - h * 0.5;
+        vec2 gv = length(a) < length(b) ? a : b;
+        
+        float hexDist = max(abs(gv.x), abs(gv.y * 0.866 + gv.x * 0.5));
+        hexDist = max(hexDist, abs(gv.y * 0.866 - gv.x * 0.5));
+        
+        float edge = smoothstep(0.5, 0.45 - f * 0.1, hexDist);
+        float pulse = sin(length(uv) * (5.0 + f * 15.0) - time * (2.0 + f * 4.0)) * 0.5 + 0.5;
+        edge *= pulse * (1.0 + audioSum);
+        
+        vec2 id = floor(p / h);
+        col = getColor(hash(id) + f * 2.0 + time * 0.05) * edge * u_intensity;
+        col += getColor(f * 3.0 + time * 0.1) * exp(-length(uv) * (2.0 - f)) * u_bloom;
+        
+        return col;
+      }
+      
       void main() {
         vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution) / min(u_resolution.x, u_resolution.y);
         vec2 uv0 = uv;
@@ -379,8 +496,18 @@ export default function WebGLVisualizer({
           finalColor = styleWaveform(uv, time, freqNorm, audioSum);
         } else if (u_visualStyle == 5) {
           finalColor = styleParticles(uv, time, freqNorm, audioSum);
-        } else {
+        } else if (u_visualStyle == 6) {
           finalColor = styleGeometric(uv, time, freqNorm, audioSum);
+        } else if (u_visualStyle == 7) {
+          finalColor = styleSpiral(uv, time, freqNorm, audioSum);
+        } else if (u_visualStyle == 8) {
+          finalColor = styleMatrix(uv, time, freqNorm, audioSum);
+        } else if (u_visualStyle == 9) {
+          finalColor = styleNebula(uv, time, freqNorm, audioSum);
+        } else if (u_visualStyle == 10) {
+          finalColor = styleRings(uv, time, freqNorm, audioSum);
+        } else {
+          finalColor = styleHexgrid(uv, time, freqNorm, audioSum);
         }
         
         vec3 glowColor = getColor(freqNorm + time * 0.1);
@@ -448,7 +575,7 @@ export default function WebGLVisualizer({
     const bloomLocation = gl.getUniformLocation(program, 'u_bloom');
 
     const waveTypes = { sine: 0, square: 1, sawtooth: 2, triangle: 3 };
-    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6 };
+    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11 };
     const colorPalettes = { cyber: 0, fire: 1, nature: 2, ocean: 3, sunset: 4, neon: 5 };
 
     const render = () => {

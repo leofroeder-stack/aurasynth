@@ -28,6 +28,11 @@ export default function VisualControls({
     { value: 'waveform', label: 'Waveform', icon: '∿' },
     { value: 'particles', label: 'Particles', icon: '✦' },
     { value: 'geometric', label: 'Geometric', icon: '⬡' },
+    { value: 'spiral', label: 'Spiral', icon: '🌀' },
+    { value: 'matrix', label: 'Matrix', icon: '▦' },
+    { value: 'nebula', label: 'Nebula', icon: '☁' },
+    { value: 'rings', label: 'Rings', icon: '◉' },
+    { value: 'hexgrid', label: 'Hex Grid', icon: '⬢' },
   ];
 
   const colorPalettes = [
@@ -55,7 +60,7 @@ export default function VisualControls({
           <Sparkles className="w-4 h-4" />
           Visual Style
         </Label>
-        <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
+        <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
           {visualStyles.map((style) => (
             <motion.button
               key={style.value}
