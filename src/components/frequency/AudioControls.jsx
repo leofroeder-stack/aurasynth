@@ -47,7 +47,19 @@ export default function AudioControls({
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 relative">
+      {/* Close Button */}
+      {onHidePanel && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onHidePanel}
+          className="absolute -top-2 -right-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full"
+        >
+          <X className="w-5 h-5" />
+        </Button>
+      )}
+      
       {/* Main Frequency Display */}
       <motion.div 
         className="text-center"

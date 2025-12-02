@@ -193,6 +193,7 @@ export default function FrequencyGenerator() {
                     setWaveType={setWaveType}
                     isPlaying={isPlaying}
                     togglePlay={togglePlay}
+                    onHidePanel={() => setIsFullscreen(true)}
                   />
                 </div>
               </div>
