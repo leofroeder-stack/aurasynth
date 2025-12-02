@@ -17,15 +17,17 @@ export default function AudioControls({
   isPlaying, 
   togglePlay,
   onHidePanel,
-  onOpenVisuals
+  onOpenVisuals,
+  minFreq = 20,
+  maxFreq = 20000
 }) {
   const [customFreqOpen, setCustomFreqOpen] = useState(false);
   const [customFreqValue, setCustomFreqValue] = useState('');
 
   const handleCustomFreqSubmit = () => {
     const val = parseFloat(customFreqValue);
-    if (!isNaN(val) && val >= 20 && val <= 20000) {
-      setFrequency(Math.min(2000, Math.max(20, val)));
+    if (!isNaN(val) && val >= minFreq && val <= maxFreq) {
+      setFrequency(Math.min(maxFreq, Math.max(minFreq, val)));
       setCustomFreqOpen(false);
       setCustomFreqValue('');
     }
@@ -39,13 +41,16 @@ export default function AudioControls({
   ];
 
   const presetFrequencies = [
+    { hz: 40, label: '40 Hz', desc: 'Gamma' },
+    { hz: 100, label: '100 Hz', desc: 'Sub Bass' },
     { hz: 432, label: '432 Hz', desc: 'Healing' },
     { hz: 440, label: '440 Hz', desc: 'Concert A' },
     { hz: 528, label: '528 Hz', desc: 'Love' },
-    { hz: 639, label: '639 Hz', desc: 'Connection' },
-    { hz: 741, label: '741 Hz', desc: 'Awakening' },
     { hz: 852, label: '852 Hz', desc: 'Intuition' },
-  ];
+    { hz: 2000, label: '2 kHz', desc: 'Mid' },
+    { hz: 8000, label: '8 kHz', desc: 'Treble' },
+    { hz: 15000, label: '15 kHz', desc: 'High' },
+    ];
 
   return (
     <div className="space-y-8 relative">
@@ -123,24 +128,24 @@ export default function AudioControls({
         </div>
       </motion.div>
 
-      {/* Frequency Slider */}
+      {/* Frequency Slider - Logarithmic scale for better control */}
       <div className="space-y-3">
         <div className="flex justify-between text-sm text-gray-400">
-          <span>20 Hz</span>
-          <span>2000 Hz</span>
+          <span>{minFreq} Hz</span>
+          <span>{maxFreq >= 1000 ? `${maxFreq/1000}k` : maxFreq} Hz</span>
         </div>
         <Slider
-          value={[frequency]}
-          onValueChange={([val]) => setFrequency(val)}
-          min={20}
-          max={2000}
-          step={0.1}
+          value={[Math.log10(frequency)]}
+          onValueChange={([val]) => setFrequency(Math.round(Math.pow(10, val) * 10) / 10)}
+          min={Math.log10(minFreq)}
+          max={Math.log10(maxFreq)}
+          step={0.001}
           className="w-full"
         />
       </div>
 
       {/* Preset Frequencies */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+      <div className="grid grid-cols-3 md:grid-cols-9 gap-2">
         {presetFrequencies.map((preset) => (
           <motion.button
             key={preset.hz}
@@ -222,13 +227,13 @@ export default function AudioControls({
       </div>
 
       {/* Fine Tune Controls */}
-      <div className="flex justify-center gap-2">
-        {[-10, -1, -0.1, 0.1, 1, 10].map((delta) => (
+      <div className="flex justify-center gap-2 flex-wrap">
+        {[-100, -10, -1, 1, 10, 100].map((delta) => (
           <Button
             key={delta}
             variant="outline"
             size="sm"
-            onClick={() => setFrequency(Math.max(20, Math.min(2000, frequency + delta)))}
+            onClick={() => setFrequency(Math.max(minFreq, Math.min(maxFreq, frequency + delta)))}
             className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
           >
             {delta > 0 ? '+' : ''}{delta}

@@ -10,6 +10,8 @@ import RecordingControls from '../components/frequency/RecordingControls';
 
 export default function FrequencyGenerator() {
   const [frequency, setFrequency] = useState(440);
+  const [minFreq, setMinFreq] = useState(20);
+  const [maxFreq, setMaxFreq] = useState(20000);
   const [volume, setVolume] = useState(0.5);
   const [waveType, setWaveType] = useState('sine');
   const [isPlaying, setIsPlaying] = useState(false);
@@ -208,6 +210,8 @@ export default function FrequencyGenerator() {
                     togglePlay={togglePlay}
                     onHidePanel={() => setIsFullscreen(true)}
                     onOpenVisuals={() => setShowVisualControls(true)}
+                    minFreq={minFreq}
+                    maxFreq={maxFreq}
                   />
                 </div>
               </div>
