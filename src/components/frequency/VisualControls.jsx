@@ -33,6 +33,7 @@ export default function VisualControls({
     { value: 'nebula', label: 'Nebula', icon: '☁' },
     { value: 'rings', label: 'Rings', icon: '◉' },
     { value: 'hexgrid', label: 'Hex Grid', icon: '⬢' },
+    { value: 'chladni', label: 'Chladni', icon: '◫' },
   ];
 
   const colorPalettes = [

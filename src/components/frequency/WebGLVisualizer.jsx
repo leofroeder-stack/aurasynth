@@ -471,6 +471,66 @@ export default function WebGLVisualizer({
         return col;
       }
       
+      vec3 styleChladni(vec2 uv, float time, float freqNorm, float audioSum) {
+        // Chladni plate simulation - sand patterns on vibrating metal
+        vec3 col = vec3(0.0);
+        
+        // Frequency determines the mode numbers (m, n) of the Chladni pattern
+        float freq = u_frequency;
+        float m = floor(freq / 200.0) + 1.0;
+        float n = floor(mod(freq, 200.0) / 40.0) + 1.0;
+        
+        // Scale UV to plate coordinates
+        vec2 p = uv * (2.0 + u_complexity);
+        
+        // Classic Chladni equation: cos(m*pi*x)*cos(n*pi*y) - cos(n*pi*x)*cos(m*pi*y)
+        float chladni1 = cos(m * PI * p.x) * cos(n * PI * p.y) - cos(n * PI * p.x) * cos(m * PI * p.y);
+        
+        // Add more harmonics based on frequency
+        float m2 = m + 1.0;
+        float n2 = n + 1.0;
+        float chladni2 = cos(m2 * PI * p.x) * cos(n2 * PI * p.y) - cos(n2 * PI * p.x) * cos(m2 * PI * p.y);
+        
+        // Mix patterns based on audio
+        float pattern = mix(chladni1, chladni2, audioSum * 0.5);
+        
+        // Sand accumulates at nodal lines (where pattern ≈ 0)
+        float sand = 1.0 - smoothstep(0.0, 0.15 + audioSum * 0.1, abs(pattern));
+        
+        // Add vibration effect
+        float vibration = sin(time * u_speed * 10.0 + length(p) * 5.0) * 0.02;
+        sand += vibration * (1.0 + audioSum);
+        
+        // Add grain texture for sand
+        float grain = hash(p * 100.0 + time * 0.1) * 0.15;
+        sand = clamp(sand + grain * sand, 0.0, 1.0);
+        
+        // Plate color (metallic gray-blue)
+        vec3 plateColor = vec3(0.15, 0.17, 0.2);
+        
+        // Sand color based on palette
+        vec3 sandColor = getColor(freqNorm + m * 0.1 + n * 0.1);
+        sandColor = mix(sandColor, vec3(0.9, 0.85, 0.7), 0.5); // Mix with natural sand color
+        
+        // Combine plate and sand
+        col = mix(plateColor, sandColor, sand * u_intensity);
+        
+        // Add metallic reflection on plate
+        float reflection = pow(max(0.0, 1.0 - abs(pattern)), 4.0) * 0.3;
+        col += getColor(time * 0.1 + freqNorm) * reflection * (1.0 - sand) * u_bloom;
+        
+        // Add subtle glow at high vibration areas
+        float glow = exp(-abs(pattern) * 3.0) * audioSum * u_bloom;
+        col += getColor(freqNorm + time * 0.05) * glow * 0.5;
+        
+        // Edge darkening (plate border)
+        float border = smoothstep(1.8, 1.5, length(uv * 1.5));
+        col *= border;
+        col += vec3(0.02) * (1.0 - border); // Dark edge
+        
+        return col;
+      }
+      
       void main() {
         vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution) / min(u_resolution.x, u_resolution.y);
         vec2 uv0 = uv;
@@ -508,8 +568,10 @@ export default function WebGLVisualizer({
           finalColor = styleNebula(uv, time, freqNorm, audioSum);
         } else if (u_visualStyle == 10) {
           finalColor = styleRings(uv, time, freqNorm, audioSum);
-        } else {
+        } else if (u_visualStyle == 11) {
           finalColor = styleHexgrid(uv, time, freqNorm, audioSum);
+        } else {
+          finalColor = styleChladni(uv, time, freqNorm, audioSum);
         }
         
         vec3 glowColor = getColor(freqNorm + time * 0.1);
@@ -577,7 +639,7 @@ export default function WebGLVisualizer({
     const bloomLocation = gl.getUniformLocation(program, 'u_bloom');
 
     const waveTypes = { sine: 0, square: 1, sawtooth: 2, triangle: 3 };
-    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11 };
+    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12 };
     const colorPalettes = { cyber: 0, fire: 1, nature: 2, ocean: 3, sunset: 4, neon: 5 };
 
     const render = () => {
