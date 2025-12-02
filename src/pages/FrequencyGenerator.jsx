@@ -7,6 +7,7 @@ import WebGLVisualizer from '../components/frequency/WebGLVisualizer';
 import AudioControls from '../components/frequency/AudioControls';
 import VisualControls from '../components/frequency/VisualControls';
 import RecordingControls from '../components/frequency/RecordingControls';
+import BeatsControls from '../components/frequency/BeatsControls';
 
 export default function FrequencyGenerator() {
   const [frequency, setFrequency] = useState(440);
@@ -28,6 +29,13 @@ export default function FrequencyGenerator() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [analyserNode, setAnalyserNode] = useState(null);
   
+  // Binaural & Isochronic beats
+  const [binauralEnabled, setBinauralEnabled] = useState(false);
+  const [binauralFreq, setBinauralFreq] = useState(10);
+  const [isochronicEnabled, setIsochronicEnabled] = useState(false);
+  const [isochronicFreq, setIsochronicFreq] = useState(10);
+  const [isochronicDepth, setIsochronicDepth] = useState(0.8);
+  
   const audioContextRef = useRef(null);
   const oscillatorRef = useRef(null);
   const gainNodeRef = useRef(null);
@@ -37,6 +45,11 @@ export default function FrequencyGenerator() {
   const audioSourceRef = useRef(null);
   const [audioFile, setAudioFile] = useState(null);
   const [audioFileName, setAudioFileName] = useState('');
+  const oscillatorRightRef = useRef(null);
+  const pannerLeftRef = useRef(null);
+  const pannerRightRef = useRef(null);
+  const isochronicGainRef = useRef(null);
+  const isochronicIntervalRef = useRef(null);
 
   const initAudio = useCallback(() => {
     if (!audioContextRef.current) {
@@ -54,28 +67,82 @@ export default function FrequencyGenerator() {
   const startOscillator = useCallback(() => {
     const ctx = initAudio();
     
-    // Stop existing oscillator
+    // Stop existing oscillators
     if (oscillatorRef.current) {
       oscillatorRef.current.stop();
       oscillatorRef.current.disconnect();
     }
+    if (oscillatorRightRef.current) {
+      oscillatorRightRef.current.stop();
+      oscillatorRightRef.current.disconnect();
+    }
     if (gainNodeRef.current) {
       gainNodeRef.current.disconnect();
     }
+    if (isochronicIntervalRef.current) {
+      clearInterval(isochronicIntervalRef.current);
+    }
 
-    // Create new oscillator
-    oscillatorRef.current = ctx.createOscillator();
+    // Create gain node
     gainNodeRef.current = ctx.createGain();
-
-    oscillatorRef.current.type = waveType;
-    oscillatorRef.current.frequency.setValueAtTime(frequency, ctx.currentTime);
     gainNodeRef.current.gain.setValueAtTime(volume, ctx.currentTime);
 
-    oscillatorRef.current.connect(gainNodeRef.current);
-    gainNodeRef.current.connect(analyserRef.current);
+    if (binauralEnabled) {
+      // Binaural beats: different frequencies in each ear
+      const leftFreq = frequency - binauralFreq / 2;
+      const rightFreq = frequency + binauralFreq / 2;
 
-    oscillatorRef.current.start();
-  }, [frequency, volume, waveType, initAudio]);
+      // Left channel
+      oscillatorRef.current = ctx.createOscillator();
+      oscillatorRef.current.type = waveType;
+      oscillatorRef.current.frequency.setValueAtTime(leftFreq, ctx.currentTime);
+      pannerLeftRef.current = ctx.createStereoPanner();
+      pannerLeftRef.current.pan.setValueAtTime(-1, ctx.currentTime);
+      oscillatorRef.current.connect(pannerLeftRef.current);
+      pannerLeftRef.current.connect(gainNodeRef.current);
+
+      // Right channel
+      oscillatorRightRef.current = ctx.createOscillator();
+      oscillatorRightRef.current.type = waveType;
+      oscillatorRightRef.current.frequency.setValueAtTime(rightFreq, ctx.currentTime);
+      pannerRightRef.current = ctx.createStereoPanner();
+      pannerRightRef.current.pan.setValueAtTime(1, ctx.currentTime);
+      oscillatorRightRef.current.connect(pannerRightRef.current);
+      pannerRightRef.current.connect(gainNodeRef.current);
+
+      oscillatorRef.current.start();
+      oscillatorRightRef.current.start();
+    } else {
+      // Normal mono oscillator
+      oscillatorRef.current = ctx.createOscillator();
+      oscillatorRef.current.type = waveType;
+      oscillatorRef.current.frequency.setValueAtTime(frequency, ctx.currentTime);
+      oscillatorRef.current.connect(gainNodeRef.current);
+      oscillatorRef.current.start();
+    }
+
+    // Isochronic tones: rhythmic amplitude modulation
+    if (isochronicEnabled) {
+      isochronicGainRef.current = ctx.createGain();
+      gainNodeRef.current.connect(isochronicGainRef.current);
+      isochronicGainRef.current.connect(analyserRef.current);
+
+      const pulsePeriod = 1000 / isochronicFreq;
+      let phase = 0;
+      
+      const modulateGain = () => {
+        if (!isochronicGainRef.current || !ctx) return;
+        const pulseValue = (Math.sin(phase) + 1) / 2;
+        const gain = 1 - (isochronicDepth * (1 - pulseValue));
+        isochronicGainRef.current.gain.setValueAtTime(gain, ctx.currentTime);
+        phase += (2 * Math.PI) / (pulsePeriod / 16);
+      };
+
+      isochronicIntervalRef.current = setInterval(modulateGain, 16);
+    } else {
+      gainNodeRef.current.connect(analyserRef.current);
+    }
+  }, [frequency, volume, waveType, initAudio, binauralEnabled, binauralFreq, isochronicEnabled, isochronicFreq, isochronicDepth]);
 
   const stopOscillator = useCallback(() => {
     if (oscillatorRef.current) {
@@ -83,9 +150,22 @@ export default function FrequencyGenerator() {
       oscillatorRef.current.disconnect();
       oscillatorRef.current = null;
     }
+    if (oscillatorRightRef.current) {
+      oscillatorRightRef.current.stop();
+      oscillatorRightRef.current.disconnect();
+      oscillatorRightRef.current = null;
+    }
     if (gainNodeRef.current) {
       gainNodeRef.current.disconnect();
       gainNodeRef.current = null;
+    }
+    if (isochronicGainRef.current) {
+      isochronicGainRef.current.disconnect();
+      isochronicGainRef.current = null;
+    }
+    if (isochronicIntervalRef.current) {
+      clearInterval(isochronicIntervalRef.current);
+      isochronicIntervalRef.current = null;
     }
   }, []);
 
@@ -146,12 +226,26 @@ export default function FrequencyGenerator() {
   // Update frequency in real-time
   useEffect(() => {
     if (oscillatorRef.current && audioContextRef.current) {
-      oscillatorRef.current.frequency.setValueAtTime(
-        frequency, 
-        audioContextRef.current.currentTime
-      );
+      if (binauralEnabled) {
+        const leftFreq = frequency - binauralFreq / 2;
+        const rightFreq = frequency + binauralFreq / 2;
+        oscillatorRef.current.frequency.setValueAtTime(leftFreq, audioContextRef.current.currentTime);
+        if (oscillatorRightRef.current) {
+          oscillatorRightRef.current.frequency.setValueAtTime(rightFreq, audioContextRef.current.currentTime);
+        }
+      } else {
+        oscillatorRef.current.frequency.setValueAtTime(frequency, audioContextRef.current.currentTime);
+      }
     }
-  }, [frequency]);
+  }, [frequency, binauralEnabled, binauralFreq]);
+
+  // Restart oscillator when beat settings change while playing
+  useEffect(() => {
+    if (isPlaying && !audioFile) {
+      stopOscillator();
+      startOscillator();
+    }
+  }, [binauralEnabled, binauralFreq, isochronicEnabled, isochronicFreq, isochronicDepth]);
 
   // Update volume in real-time
   useEffect(() => {
@@ -265,13 +359,27 @@ export default function FrequencyGenerator() {
                                           onFileUpload={handleFileUpload}
                                           audioFileName={audioFileName}
                                           recordingControls={
-                      <RecordingControls
-                        audioContext={audioContextRef.current}
-                        gainNode={gainNodeRef.current}
-                        canvasRef={canvasRef}
-                        isPlaying={isPlaying}
-                      />
-                    }
+                                                                    <>
+                                                                      <BeatsControls
+                                                                        binauralEnabled={binauralEnabled}
+                                                                        setBinauralEnabled={setBinauralEnabled}
+                                                                        binauralFreq={binauralFreq}
+                                                                        setBinauralFreq={setBinauralFreq}
+                                                                        isochronicEnabled={isochronicEnabled}
+                                                                        setIsochronicEnabled={setIsochronicEnabled}
+                                                                        isochronicFreq={isochronicFreq}
+                                                                        setIsochronicFreq={setIsochronicFreq}
+                                                                        isochronicDepth={isochronicDepth}
+                                                                        setIsochronicDepth={setIsochronicDepth}
+                                                                      />
+                                                                      <RecordingControls
+                                                                        audioContext={audioContextRef.current}
+                                                                        gainNode={gainNodeRef.current}
+                                                                        canvasRef={canvasRef}
+                                                                        isPlaying={isPlaying}
+                                                                      />
+                                                                    </>
+                                                                  }
                   />
                 </div>
               </div>
