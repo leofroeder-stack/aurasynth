@@ -33,6 +33,10 @@ export default function FrequencyGenerator() {
   const gainNodeRef = useRef(null);
   const analyserRef = useRef(null);
   const canvasRef = useRef(null);
+  const audioElementRef = useRef(null);
+  const audioSourceRef = useRef(null);
+  const [audioFile, setAudioFile] = useState(null);
+  const [audioFileName, setAudioFileName] = useState('');
 
   const initAudio = useCallback(() => {
     if (!audioContextRef.current) {
@@ -85,14 +89,59 @@ export default function FrequencyGenerator() {
     }
   }, []);
 
+  const stopAudioFile = useCallback(() => {
+    if (audioElementRef.current) {
+      audioElementRef.current.pause();
+      audioElementRef.current.currentTime = 0;
+    }
+  }, []);
+
+  const startAudioFile = useCallback(() => {
+    if (!audioFile) return;
+    
+    const ctx = initAudio();
+    
+    if (!audioElementRef.current) {
+      audioElementRef.current = new Audio();
+      audioElementRef.current.loop = true;
+    }
+    
+    audioElementRef.current.src = URL.createObjectURL(audioFile);
+    
+    if (!audioSourceRef.current) {
+      audioSourceRef.current = ctx.createMediaElementSource(audioElementRef.current);
+      audioSourceRef.current.connect(analyserRef.current);
+    }
+    
+    audioElementRef.current.play();
+  }, [audioFile, initAudio]);
+
   const togglePlay = useCallback(() => {
     if (isPlaying) {
-      stopOscillator();
+      if (audioFile) {
+        stopAudioFile();
+      } else {
+        stopOscillator();
+      }
     } else {
-      startOscillator();
+      if (audioFile) {
+        startAudioFile();
+      } else {
+        startOscillator();
+      }
     }
     setIsPlaying(!isPlaying);
-  }, [isPlaying, startOscillator, stopOscillator]);
+  }, [isPlaying, audioFile, startOscillator, stopOscillator, startAudioFile, stopAudioFile]);
+
+  const handleFileUpload = useCallback((file) => {
+    if (isPlaying) {
+      stopOscillator();
+      stopAudioFile();
+      setIsPlaying(false);
+    }
+    setAudioFile(file);
+    setAudioFileName(file.name);
+  }, [isPlaying, stopOscillator, stopAudioFile]);
 
   // Update frequency in real-time
   useEffect(() => {
@@ -125,11 +174,12 @@ export default function FrequencyGenerator() {
   useEffect(() => {
     return () => {
       stopOscillator();
+      stopAudioFile();
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
     };
-  }, [stopOscillator]);
+  }, [stopOscillator, stopAudioFile]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white overflow-hidden relative">
@@ -211,8 +261,10 @@ export default function FrequencyGenerator() {
                     onHidePanel={() => setIsFullscreen(true)}
                     onOpenVisuals={() => setShowVisualControls(true)}
                     minFreq={minFreq}
-                    maxFreq={maxFreq}
-                    recordingControls={
+                                          maxFreq={maxFreq}
+                                          onFileUpload={handleFileUpload}
+                                          audioFileName={audioFileName}
+                                          recordingControls={
                       <RecordingControls
                         audioContext={audioContextRef.current}
                         gainNode={gainNodeRef.current}

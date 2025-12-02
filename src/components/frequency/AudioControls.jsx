@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Play, Pause, Volume2, Waves, Edit3, X, Settings2 } from "lucide-react";
+import { Play, Pause, Volume2, Waves, Edit3, X, Settings2, Upload } from "lucide-react";
 import { motion } from "framer-motion";
 import TherapyFrequencyPicker from './TherapyFrequencyPicker';
 
@@ -21,10 +21,20 @@ export default function AudioControls({
   onOpenVisuals,
   minFreq = 20,
   maxFreq = 20000,
-  recordingControls
+  recordingControls,
+  onFileUpload,
+  audioFileName
 }) {
   const [customFreqOpen, setCustomFreqOpen] = useState(false);
   const [customFreqValue, setCustomFreqValue] = useState('');
+  const fileInputRef = React.useRef(null);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file && onFileUpload) {
+      onFileUpload(file);
+    }
+  };
 
   const handleCustomFreqSubmit = () => {
     const val = parseFloat(customFreqValue);
@@ -210,6 +220,29 @@ export default function AudioControls({
             )}
           </Button>
         </motion.div>
+
+        {/* Upload Audio File */}
+        <div className="flex flex-col items-center gap-1">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="audio/*"
+            className="hidden"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:text-white gap-2"
+          >
+            <Upload className="w-4 h-4" />
+            Upload
+          </Button>
+          {audioFileName && (
+            <span className="text-xs text-cyan-400 truncate max-w-[100px]">{audioFileName}</span>
+          )}
+        </div>
 
         {/* Waveform Selector */}
         <div className="flex items-center gap-2">
