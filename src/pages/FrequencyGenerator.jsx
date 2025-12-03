@@ -61,24 +61,9 @@ export default function FrequencyGenerator() {
       analyserRef.current.fftSize = 256;
       analyserRef.current.connect(audioContextRef.current.destination);
       setAnalyserNode(analyserRef.current);
-      
-      // Enable background audio playback for iOS/Android
-      if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: 'Frequency Generator',
-          artist: 'Sound Therapy',
-          album: 'Healing Frequencies'
-        });
-        navigator.mediaSession.setActionHandler('play', () => {
-          if (!isPlaying) togglePlay();
-        });
-        navigator.mediaSession.setActionHandler('pause', () => {
-          if (isPlaying) togglePlay();
-        });
-      }
     }
     return audioContextRef.current;
-  }, [isPlaying, togglePlay]);
+  }, []);
 
   const startOscillator = useCallback(() => {
     const ctx = initAudio();
@@ -339,6 +324,28 @@ export default function FrequencyGenerator() {
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, [isFullscreen]);
+
+  // Setup Media Session for background playback
+  useEffect(() => {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: 'Frequency Generator',
+        artist: 'Sound Therapy',
+        album: 'Healing Frequencies'
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.setActionHandler('play', () => {
+        if (!isPlaying) togglePlay();
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        if (isPlaying) togglePlay();
+      });
+    }
+  }, [isPlaying, togglePlay]);
 
   // Cleanup on unmount
   useEffect(() => {
