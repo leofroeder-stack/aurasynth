@@ -279,6 +279,16 @@ export default function FrequencyGenerator() {
   // Handle browser fullscreen
   const enterFullscreen = useCallback(() => {
     setIsFullscreen(true);
+    // Set status bar color to black on mobile
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+      metaTheme.setAttribute('content', '#000000');
+    } else {
+      const meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      meta.content = '#000000';
+      document.head.appendChild(meta);
+    }
     if (containerRef.current && document.fullscreenEnabled) {
       containerRef.current.requestFullscreen().catch(() => {});
     }
@@ -286,6 +296,11 @@ export default function FrequencyGenerator() {
 
   const exitFullscreen = useCallback(() => {
     setIsFullscreen(false);
+    // Restore original theme color
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+      metaTheme.setAttribute('content', '#0a0a0f');
+    }
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
     }
@@ -317,7 +332,7 @@ export default function FrequencyGenerator() {
   }, [stopOscillator, stopAudioFile]);
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-[#0a0a0f] text-white overflow-hidden relative">
+    <div ref={containerRef} className={`min-h-screen text-white overflow-hidden relative ${isFullscreen ? 'bg-black' : 'bg-[#0a0a0f]'}`} style={isFullscreen ? { paddingTop: 'env(safe-area-inset-top)', backgroundColor: '#000000' } : undefined}>
       {/* Fullscreen frequency control overlay */}
       {isFullscreen && (
         <FrequencyOverlay 
