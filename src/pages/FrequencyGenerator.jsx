@@ -61,12 +61,32 @@ export default function FrequencyGenerator() {
       analyserRef.current.fftSize = 256;
       analyserRef.current.connect(audioContextRef.current.destination);
       setAnalyserNode(analyserRef.current);
+      
+      // Enable background audio playback for iOS/Android
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: 'Frequency Generator',
+          artist: 'Sound Therapy',
+          album: 'Healing Frequencies'
+        });
+        navigator.mediaSession.setActionHandler('play', () => {
+          if (!isPlaying) togglePlay();
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+          if (isPlaying) togglePlay();
+        });
+      }
     }
     return audioContextRef.current;
-  }, []);
+  }, [isPlaying, togglePlay]);
 
   const startOscillator = useCallback(() => {
     const ctx = initAudio();
+    
+    // Resume audio context if suspended (iOS requirement)
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
     
     // Stop existing oscillators
     if (oscillatorRef.current) {
@@ -185,6 +205,9 @@ export default function FrequencyGenerator() {
     if (!audioElementRef.current) {
       audioElementRef.current = new Audio();
       audioElementRef.current.loop = true;
+      // Enable background playback
+      audioElementRef.current.setAttribute('playsinline', '');
+      audioElementRef.current.setAttribute('webkit-playsinline', '');
     }
     
     audioElementRef.current.src = URL.createObjectURL(audioFile);
