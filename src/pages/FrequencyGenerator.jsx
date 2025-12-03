@@ -415,6 +415,10 @@ export default function FrequencyGenerator() {
                     togglePlay={togglePlay}
                     onFullscreen={enterFullscreen}
                     onOpenVisuals={() => setShowVisualControls(true)}
+                    onApplyVisualStyle={(style, palette) => {
+                      setVisualStyle(style);
+                      setColorPalette(palette);
+                    }}
                     minFreq={minFreq}
                                           maxFreq={maxFreq}
                                           onFileUpload={handleFileUpload}
