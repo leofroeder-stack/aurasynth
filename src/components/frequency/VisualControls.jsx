@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Palette, Zap, Layers, RotateCcw, Sun, Shuffle, RotateCw } from "lucide-react";
+import { Sparkles, Palette, Zap, Layers, RotateCcw, Sun, Shuffle, RotateCw, X } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function VisualControls({
@@ -19,7 +19,8 @@ export default function VisualControls({
   symmetry,
   setSymmetry,
   bloom,
-  setBloom
+  setBloom,
+  onClose
 }) {
   const visualStyles = [
         { value: 'fractal', label: 'Fractal', icon: '✧' },
@@ -90,6 +91,20 @@ export default function VisualControls({
 
   return (
     <div className="space-y-6">
+      {/* Close Button */}
+      {onClose && (
+        <div className="flex justify-end -mt-2 -mr-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+      )}
+
       {/* Visual Style Selection */}
       <div className="space-y-3">
         <Label className="text-sm text-gray-400 flex items-center gap-2">

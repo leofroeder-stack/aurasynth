@@ -536,6 +536,7 @@ export default function FrequencyGenerator() {
                   setSymmetry={setSymmetry}
                   bloom={bloom}
                   setBloom={setBloom}
+                  onClose={() => setShowVisualControls(false)}
                 />
               </div>
             </motion.div>
