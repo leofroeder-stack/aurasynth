@@ -58,30 +58,44 @@ export default function AmbientAnalyzer({ onApplyFrequency, onApplyVisualStyle }
   const [noisePattern, setNoisePattern] = useState('analyzing');
   const [recommendations, setRecommendations] = useState([]);
   const [analysisHistory, setAnalysisHistory] = useState([]);
+  const [realtimeHistory, setRealtimeHistory] = useState([]);
+  const [environmentScore, setEnvironmentScore] = useState(null);
+  const [frequencyBands, setFrequencyBands] = useState({ low: 0, mid: 0, high: 0 });
+  const [heartRateEstimate, setHeartRateEstimate] = useState(null);
+  const [activeTab, setActiveTab] = useState('analyze');
   
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const micStreamRef = useRef(null);
   const animationRef = useRef(null);
   const dataArrayRef = useRef(null);
+  const historyIntervalRef = useRef(null);
+  const peakHistoryRef = useRef([]);
 
   const getStressInfo = (level) => {
-    if (level <= STRESS_THRESHOLDS.low.max) return STRESS_THRESHOLDS.low;
-    if (level <= STRESS_THRESHOLDS.moderate.max) return STRESS_THRESHOLDS.moderate;
-    if (level <= STRESS_THRESHOLDS.elevated.max) return STRESS_THRESHOLDS.elevated;
-    return STRESS_THRESHOLDS.high;
+    if (level <= STRESS_THRESHOLDS.low.max) return { ...STRESS_THRESHOLDS.low, key: 'calm' };
+    if (level <= STRESS_THRESHOLDS.moderate.max) return { ...STRESS_THRESHOLDS.moderate, key: 'moderate' };
+    if (level <= STRESS_THRESHOLDS.elevated.max) return { ...STRESS_THRESHOLDS.elevated, key: 'elevated' };
+    if (level <= STRESS_THRESHOLDS.high.max) return { ...STRESS_THRESHOLDS.high, key: 'high' };
+    return { ...STRESS_THRESHOLDS.extreme, key: 'extreme' };
   };
 
-  const detectNoisePattern = (dataArray) => {
+  const detectNoisePattern = (dataArray, frequencyBands) => {
     const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
     const variance = dataArray.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / dataArray.length;
     const stdDev = Math.sqrt(variance);
     
-    if (avg < 30 && stdDev < 20) return 'quiet';
-    if (stdDev > 60) return 'chaotic';
-    if (avg > 150 && stdDev < 40) return 'constant';
-    if (stdDev > 30 && stdDev < 60) return 'rhythmic';
-    return 'mixed';
+    // Enhanced pattern detection
+    const { low, mid, high } = frequencyBands;
+    
+    if (avg < 25 && stdDev < 15) return { type: 'quiet', desc: 'Silent environment', icon: '🌙' };
+    if (low > mid * 1.5 && low > high * 2) return { type: 'rumble', desc: 'Low frequency rumble (traffic, HVAC)', icon: '🚗' };
+    if (high > mid * 1.5 && high > low * 1.5) return { type: 'sharp', desc: 'High frequency noise (electronics)', icon: '📺' };
+    if (stdDev > 70) return { type: 'chaotic', desc: 'Unpredictable noise bursts', icon: '⚡' };
+    if (avg > 150 && stdDev < 35) return { type: 'constant', desc: 'Steady background noise', icon: '🔊' };
+    if (stdDev > 25 && stdDev < 55) return { type: 'rhythmic', desc: 'Rhythmic or musical pattern', icon: '🎵' };
+    if (mid > low && mid > high) return { type: 'speech', desc: 'Voice or conversation detected', icon: '🗣️' };
+    return { type: 'mixed', desc: 'Variable mixed frequencies', icon: '🌊' };
   };
 
   const findDominantFrequency = (dataArray, sampleRate) => {
@@ -98,26 +112,73 @@ export default function AmbientAnalyzer({ onApplyFrequency, onApplyVisualStyle }
     return Math.round(frequency);
   };
 
+  const analyzeFrequencyBands = (dataArray) => {
+    const len = dataArray.length;
+    const lowEnd = Math.floor(len * 0.1);
+    const midEnd = Math.floor(len * 0.4);
+    
+    const low = dataArray.slice(0, lowEnd).reduce((a, b) => a + b, 0) / lowEnd;
+    const mid = dataArray.slice(lowEnd, midEnd).reduce((a, b) => a + b, 0) / (midEnd - lowEnd);
+    const high = dataArray.slice(midEnd).reduce((a, b) => a + b, 0) / (len - midEnd);
+    
+    return { low, mid, high };
+  };
+
+  const calculateEnvironmentScore = (stress, pattern, bands) => {
+    // 0-100 score where higher is better (calmer)
+    const stressScore = (1 - stress) * 40;
+    const patternScore = pattern.type === 'quiet' ? 30 : pattern.type === 'rhythmic' ? 20 : pattern.type === 'chaotic' ? 5 : 15;
+    const balanceScore = Math.max(0, 30 - Math.abs(bands.low - bands.mid) * 0.2 - Math.abs(bands.mid - bands.high) * 0.2);
+    return Math.round(stressScore + patternScore + balanceScore);
+  };
+
+  const estimateStressFromAudio = (dataArray, prevPeaks) => {
+    // Sophisticated multi-factor stress detection
+    const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+    const max = Math.max(...dataArray);
+    const variance = dataArray.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / dataArray.length;
+    const stdDev = Math.sqrt(variance);
+    
+    // Sudden changes indicate stress
+    const suddenChange = prevPeaks.length > 0 ? Math.abs(max - prevPeaks[prevPeaks.length - 1]) / 255 : 0;
+    
+    // High frequency content often correlates with stress
+    const highFreqRatio = dataArray.slice(Math.floor(dataArray.length * 0.6)).reduce((a, b) => a + b, 0) / 
+                         (dataArray.reduce((a, b) => a + b, 0) || 1);
+    
+    // Weighted stress calculation
+    const intensity = avg / 255;
+    const chaos = stdDev / 100;
+    const spikes = suddenChange;
+    const sharpness = highFreqRatio;
+    
+    const stress = Math.min(1, 
+      intensity * 0.35 + 
+      chaos * 0.25 + 
+      spikes * 0.2 + 
+      sharpness * 0.2
+    );
+    
+    return stress;
+  };
+
   const generateRecommendations = (stress, pattern) => {
     const filtered = FREQUENCY_RECOMMENDATIONS.filter(
       rec => stress >= rec.stressRange[0] && stress <= rec.stressRange[1]
     );
     
-    // Sort by relevance to stress level
+    // Sort by relevance to stress level and pattern
     filtered.sort((a, b) => {
       const aMid = (a.stressRange[0] + a.stressRange[1]) / 2;
       const bMid = (b.stressRange[0] + b.stressRange[1]) / 2;
       return Math.abs(stress - aMid) - Math.abs(stress - bMid);
     });
     
-    return filtered.slice(0, 3);
+    return filtered.slice(0, 4);
   };
 
-  const getVisualRecommendation = (stress, pattern) => {
-    if (stress < 0.3) return { style: 'aurora', palette: 'nature' };
-    if (stress < 0.5) return { style: 'nebula', palette: 'ocean' };
-    if (stress < 0.7) return { style: 'mandala', palette: 'aurora' };
-    return { style: 'chladni', palette: 'ice' };
+  const getVisualSuggestions = (stressKey) => {
+    return VISUAL_SUGGESTIONS[stressKey] || VISUAL_SUGGESTIONS.moderate;
   };
 
   const startListening = useCallback(async () => {
