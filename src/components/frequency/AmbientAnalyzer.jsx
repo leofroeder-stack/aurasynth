@@ -252,6 +252,9 @@ export default function AmbientAnalyzer({ onApplyFrequency, onApplyVisualStyle }
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
     }
+    if (historyIntervalRef.current) {
+      clearInterval(historyIntervalRef.current);
+    }
     if (micStreamRef.current) {
       micStreamRef.current.getTracks().forEach(track => track.stop());
     }
@@ -260,33 +263,42 @@ export default function AmbientAnalyzer({ onApplyFrequency, onApplyVisualStyle }
     }
     setIsListening(false);
     
-    // Save to history
+    // Save to history with more data
     if (stressLevel > 0) {
-      setAnalysisHistory(prev => [...prev.slice(-4), {
+      setAnalysisHistory(prev => [...prev.slice(-9), {
         time: new Date().toLocaleTimeString(),
         stress: stressLevel,
-        pattern: noisePattern
+        pattern: noisePattern?.type || 'unknown',
+        envScore: environmentScore,
+        avgStress: realtimeHistory.length > 0 
+          ? (realtimeHistory.reduce((a, b) => a + b.stress, 0) / realtimeHistory.length).toFixed(2)
+          : stressLevel.toFixed(2)
       }]);
     }
-  }, [stressLevel, noisePattern]);
+  }, [stressLevel, noisePattern, environmentScore, realtimeHistory]);
 
   const applyRecommendation = (rec) => {
     onApplyFrequency(rec.frequency);
-    const visual = getVisualRecommendation(stressLevel, noisePattern);
-    onApplyVisualStyle(visual.style, visual.palette);
+    onApplyVisualStyle(rec.visualStyle, rec.colorPalette);
     setIsOpen(false);
     stopListening();
+  };
+
+  const applyVisualSuggestion = (suggestion) => {
+    onApplyVisualStyle(suggestion.style, suggestion.palette);
   };
 
   useEffect(() => {
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      if (historyIntervalRef.current) clearInterval(historyIntervalRef.current);
       if (micStreamRef.current) micStreamRef.current.getTracks().forEach(track => track.stop());
       if (audioContextRef.current) audioContextRef.current.close();
     };
   }, []);
 
   const stressInfo = getStressInfo(stressLevel);
+  const visualSuggestions = getVisualSuggestions(stressInfo.key);
 
   return (
     <>
