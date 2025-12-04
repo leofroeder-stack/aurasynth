@@ -1040,6 +1040,9 @@ export default function WebGLVisualizer({
           const isochronicEnabledLocation = gl.getUniformLocation(program, 'u_isochronicEnabled');
           const isochronicFreqLocation = gl.getUniformLocation(program, 'u_isochronicFreq');
           const isochronicDepthLocation = gl.getUniformLocation(program, 'u_isochronicDepth');
+          const touchPointsLocation = gl.getUniformLocation(program, 'u_touchPoints');
+          const touchCountLocation = gl.getUniformLocation(program, 'u_touchCount');
+          const dragVelocityLocation = gl.getUniformLocation(program, 'u_dragVelocity');
 
           const waveTypes = { sine: 0, square: 1, sawtooth: 2, triangle: 3 };
     const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12, aurora: 13, fireworks: 14, mandala: 15, liquid: 16, electric: 17, electrons: 18 };
