@@ -41,7 +41,8 @@ export default function VisualControls({
         { value: 'mandala', label: 'Mandala', icon: '☸' },
         { value: 'liquid', label: 'Liquid', icon: '💧' },
         { value: 'electric', label: 'Electric', icon: '⚡' },
-      ];
+                      { value: 'electrons', label: 'Electrons', icon: '⚛' },
+                    ];
 
   const colorPalettes = [
                 { value: 'cyber', label: 'Cyber', colors: ['#00f0ff', '#ff00aa', '#7b00ff'] },

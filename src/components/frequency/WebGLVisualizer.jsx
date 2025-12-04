@@ -628,38 +628,126 @@ export default function WebGLVisualizer({
             }
             
             vec3 styleElectric(vec2 uv, float time, float freqNorm, float audioSum) {
-              vec3 col = vec3(0.0);
-              float f = freqNorm * 5.0;
-              
-              for (float i = 0.0; i < 5.0; i++) {
-                vec2 start = vec2(-1.0, (i - 2.0) * 0.3);
-                vec2 end = vec2(1.0, (i - 2.0) * 0.3 + sin(time * u_speed + i) * 0.2);
-                
-                float segments = 20.0;
-                vec2 prev = start;
-                
-                for (float j = 1.0; j <= 20.0; j++) {
-                  float t = j / segments;
-                  vec2 pos = mix(start, end, t);
-                  float offset = sin(t * 30.0 + time * u_speed * 10.0 + i * 5.0 + f * 20.0) * 0.1;
-                  offset *= sin(t * PI) * (1.0 + audioSum + f);
-                  pos.y += offset;
-                  
-                  float dist = length(uv - pos);
-                  float bolt = 0.005 / dist;
-                  bolt *= 1.0 + audioSum;
-                  
-                  col += getColor(i * 0.2 + t + f * 2.0 + time * 0.1) * bolt * u_intensity;
-                  prev = pos;
-                }
-              }
-              
-              float flash = pow(sin(time * u_speed * 5.0) * 0.5 + 0.5, 8.0) * audioSum;
-              col += getColor(f + time * 0.2) * flash * 0.3;
-              
-              col += getColor(f * 2.0 + time * 0.1) * exp(-length(uv) * 2.0) * u_bloom;
-              return col;
-            }
+                                vec3 col = vec3(0.0);
+                                float f = freqNorm * 5.0;
+
+                                for (float i = 0.0; i < 5.0; i++) {
+                                  vec2 start = vec2(-1.0, (i - 2.0) * 0.3);
+                                  vec2 end = vec2(1.0, (i - 2.0) * 0.3 + sin(time * u_speed + i) * 0.2);
+
+                                  float segments = 20.0;
+                                  vec2 prev = start;
+
+                                  for (float j = 1.0; j <= 20.0; j++) {
+                                    float t = j / segments;
+                                    vec2 pos = mix(start, end, t);
+                                    float offset = sin(t * 30.0 + time * u_speed * 10.0 + i * 5.0 + f * 20.0) * 0.1;
+                                    offset *= sin(t * PI) * (1.0 + audioSum + f);
+                                    pos.y += offset;
+
+                                    float dist = length(uv - pos);
+                                    float bolt = 0.005 / dist;
+                                    bolt *= 1.0 + audioSum;
+
+                                    col += getColor(i * 0.2 + t + f * 2.0 + time * 0.1) * bolt * u_intensity;
+                                    prev = pos;
+                                  }
+                                }
+
+                                float flash = pow(sin(time * u_speed * 5.0) * 0.5 + 0.5, 8.0) * audioSum;
+                                col += getColor(f + time * 0.2) * flash * 0.3;
+
+                                col += getColor(f * 2.0 + time * 0.1) * exp(-length(uv) * 2.0) * u_bloom;
+                                return col;
+                              }
+
+                              vec3 styleElectrons(vec2 uv, float time, float freqNorm, float audioSum) {
+                                vec3 col = vec3(0.0);
+                                float f = freqNorm * 3.0;
+
+                                // Nucleus glow at center
+                                float nucleusGlow = 0.02 / (length(uv) + 0.05);
+                                nucleusGlow *= 1.0 + sin(time * u_speed * 5.0) * 0.3 * audioSum;
+                                col += getColor(time * 0.1) * nucleusGlow * u_bloom * 0.5;
+
+                                // Protons/neutrons in nucleus
+                                for (float i = 0.0; i < 4.0; i++) {
+                                  float angle = i * TAU / 4.0 + time * u_speed * 0.5;
+                                  vec2 nucleonPos = vec2(cos(angle), sin(angle)) * 0.03;
+                                  float nucleon = 0.008 / length(uv - nucleonPos);
+                                  col += vec3(1.0, 0.3, 0.2) * nucleon * u_intensity * 0.5;
+                                }
+
+                                // Electron shells/orbitals
+                                float numShells = 3.0 + f * 2.0;
+                                for (float shell = 1.0; shell <= 5.0; shell++) {
+                                  if (shell > numShells) break;
+
+                                  float shellRadius = shell * 0.18 * (1.0 + audioSum * 0.2);
+
+                                  // Draw orbital path (faint)
+                                  float orbital = smoothstep(0.008, 0.0, abs(length(uv) - shellRadius));
+                                  col += getColor(shell * 0.2 + time * 0.05) * orbital * 0.1 * u_intensity;
+
+                                  // Electrons on this shell
+                                  float electronsInShell = shell * 2.0;
+                                  for (float e = 0.0; e < 10.0; e++) {
+                                    if (e >= electronsInShell) break;
+
+                                    // Electron orbit - different speeds per shell
+                                    float orbitSpeed = u_speed * (2.0 - shell * 0.3) * (1.0 + f);
+                                    float electronAngle = e * TAU / electronsInShell + time * orbitSpeed + shell * 1.5;
+
+                                    // Add wobble based on frequency
+                                    electronAngle += sin(time * u_speed * 3.0 + e) * f * 0.3;
+
+                                    // 3D-like orbit tilt per shell
+                                    float tilt = shell * 0.3 + sin(time * u_speed * 0.5 + shell) * 0.2;
+                                    vec2 electronPos = vec2(
+                                      cos(electronAngle) * shellRadius,
+                                      sin(electronAngle) * shellRadius * cos(tilt)
+                                    );
+
+                                    // Electron particle
+                                    float dist = length(uv - electronPos);
+                                    float electronSize = 0.015 + audioSum * 0.01;
+                                    float electron = electronSize / dist;
+                                    electron = pow(electron, 1.5);
+
+                                    // Electron color - blue/cyan glow
+                                    vec3 electronColor = getColor(0.5 + shell * 0.1 + time * 0.1);
+                                    col += electronColor * electron * u_intensity;
+
+                                    // Motion trail
+                                    for (float t = 1.0; t <= 5.0; t++) {
+                                      float trailAngle = electronAngle - t * 0.15 * orbitSpeed * 0.1;
+                                      vec2 trailPos = vec2(
+                                        cos(trailAngle) * shellRadius,
+                                        sin(trailAngle) * shellRadius * cos(tilt)
+                                      );
+                                      float trailDist = length(uv - trailPos);
+                                      float trail = (electronSize * 0.5) / trailDist;
+                                      trail *= (6.0 - t) / 6.0; // Fade trail
+                                      col += electronColor * trail * u_intensity * 0.3;
+                                    }
+                                  }
+                                }
+
+                                // Quantum probability cloud effect
+                                float cloudNoise = noise(uv * 5.0 + time * u_speed * 0.5);
+                                cloudNoise *= exp(-length(uv) * 2.0);
+                                col += getColor(time * 0.2 + f) * cloudNoise * u_bloom * 0.2 * (1.0 + audioSum);
+
+                                // Energy level transitions (random flashes)
+                                float flash = pow(hash(vec2(floor(time * 3.0), 0.0)), 10.0);
+                                if (flash > 0.5) {
+                                  float flashRadius = mod(time * 2.0, 1.0) * 0.8;
+                                  float photon = smoothstep(0.05, 0.0, abs(length(uv) - flashRadius));
+                                  col += getColor(time + f * 2.0) * photon * audioSum * u_bloom;
+                                }
+
+                                return col;
+                              }
             
             vec3 styleChladni(vec2 uv, float time, float freqNorm, float audioSum) {
         // Animated Chladni plate simulation - sand patterns on vibrating metal
@@ -822,9 +910,11 @@ export default function WebGLVisualizer({
                         finalColor = styleMandala(uv, time, freqNorm, audioSum);
                       } else if (u_visualStyle == 16) {
                         finalColor = styleLiquid(uv, time, freqNorm, audioSum);
-                      } else {
-                        finalColor = styleElectric(uv, time, freqNorm, audioSum);
-                      }
+                      } else if (u_visualStyle == 17) {
+                                                    finalColor = styleElectric(uv, time, freqNorm, audioSum);
+                                                  } else {
+                                                    finalColor = styleElectrons(uv, time, freqNorm, audioSum);
+                                                  }
         
         vec3 glowColor = getColor(freqNorm + time * 0.1);
         float glow = exp(-length(uv0) * (2.0 - freqNorm)) * u_bloom;
@@ -913,7 +1003,7 @@ export default function WebGLVisualizer({
           const isochronicDepthLocation = gl.getUniformLocation(program, 'u_isochronicDepth');
 
           const waveTypes = { sine: 0, square: 1, sawtooth: 2, triangle: 3 };
-    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12, aurora: 13, fireworks: 14, mandala: 15, liquid: 16, electric: 17 };
+    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12, aurora: 13, fireworks: 14, mandala: 15, liquid: 16, electric: 17, electrons: 18 };
           const colorPalettes = { cyber: 0, fire: 1, nature: 2, ocean: 3, sunset: 4, neon: 5, aurora: 6, lava: 7, ice: 8, candy: 9, galaxy: 10 };
 
     const render = () => {
