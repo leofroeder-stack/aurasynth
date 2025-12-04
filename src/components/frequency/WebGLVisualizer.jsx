@@ -17,7 +17,9 @@ export default function WebGLVisualizer({
   binauralFreq = 10,
   isochronicEnabled = false,
   isochronicFreq = 10,
-  isochronicDepth = 0.8
+  isochronicDepth = 0.8,
+  touchPoints = [],
+  dragVelocity = { x: 0, y: 0 }
 }) {
   const internalCanvasRef = useRef(null);
   const canvasRef = externalCanvasRef || internalCanvasRef;
@@ -62,10 +64,13 @@ export default function WebGLVisualizer({
               uniform float u_binauralEnabled;
               uniform float u_binauralFreq;
               uniform float u_isochronicEnabled;
-              uniform float u_isochronicFreq;
-              uniform float u_isochronicDepth;
+                                  uniform float u_isochronicFreq;
+                                  uniform float u_isochronicDepth;
+                                  uniform vec2 u_touchPoints[5];
+                                  uniform float u_touchCount;
+                                  uniform vec2 u_dragVelocity;
 
-              #define PI 3.14159265359
+                                  #define PI 3.14159265359
       #define TAU 6.28318530718
       
       vec3 paletteCyber(float t) {
@@ -921,9 +926,43 @@ export default function WebGLVisualizer({
         finalColor += glowColor * glow * u_amplitude * 0.3;
         
         float vignette = 1.0 - length(uv0) * 0.4;
-                  finalColor *= vignette;
+                                finalColor *= vignette;
 
-                  // Apply beat modulations
+                                // Touch reactive effects
+                                for (int i = 0; i < 5; i++) {
+                                  if (float(i) >= u_touchCount) break;
+                                  vec2 touchPos = u_touchPoints[i];
+                                  float touchDist = length(uv - touchPos);
+
+                                  // Ripple wave from touch point
+                                  float ripple = sin(touchDist * 30.0 - time * 8.0) * 0.5 + 0.5;
+                                  ripple *= exp(-touchDist * 3.0);
+                                  ripple *= smoothstep(1.0, 0.0, touchDist);
+                                  finalColor += getColor(touchDist + time * 0.5) * ripple * 0.5;
+
+                                  // Glow at touch point
+                                  float touchGlow = 0.03 / (touchDist + 0.05);
+                                  finalColor += getColor(time * 0.2 + float(i) * 0.3) * touchGlow * 0.3;
+
+                                  // Multi-touch harmonics (when more than one touch)
+                                  if (u_touchCount > 1.0 && i > 0) {
+                                    vec2 prevTouch = u_touchPoints[i - 1];
+                                    vec2 midPoint = (touchPos + prevTouch) * 0.5;
+                                    float harmonic = sin(length(uv - midPoint) * 50.0 - time * 10.0);
+                                    harmonic *= exp(-length(uv - midPoint) * 4.0);
+                                    finalColor += getColor(float(i) * 0.5 + time * 0.3) * abs(harmonic) * 0.3;
+                                  }
+                                }
+
+                                // Drag distortion effect
+                                if (length(u_dragVelocity) > 0.01) {
+                                  float dragStrength = length(u_dragVelocity);
+                                  vec2 dragDir = normalize(u_dragVelocity);
+                                  float dragEffect = dot(uv, dragDir) * dragStrength * 2.0;
+                                  finalColor += getColor(dragEffect + time * 0.5) * abs(sin(dragEffect * 20.0)) * 0.2;
+                                }
+
+                                // Apply beat modulations
                   finalColor *= binauralMod * isochronicMod;
 
                   // Add pulsing glow for isochronic
@@ -1043,9 +1082,19 @@ export default function WebGLVisualizer({
               gl.uniform1f(binauralFreqLocation, binauralFreq);
               gl.uniform1f(isochronicEnabledLocation, isochronicEnabled ? 1.0 : 0.0);
               gl.uniform1f(isochronicFreqLocation, isochronicFreq);
-              gl.uniform1f(isochronicDepthLocation, isochronicDepth);
+                                  gl.uniform1f(isochronicDepthLocation, isochronicDepth);
 
-              gl.drawArrays(gl.TRIANGLES, 0, 6);
+                        // Touch points (normalized to -1 to 1 range)
+                        const touchData = new Float32Array(10).fill(0);
+                        touchPoints.slice(0, 5).forEach((point, i) => {
+                          touchData[i * 2] = point.x;
+                          touchData[i * 2 + 1] = point.y;
+                        });
+                        gl.uniform2fv(touchPointsLocation, touchData);
+                        gl.uniform1f(touchCountLocation, Math.min(touchPoints.length, 5));
+                        gl.uniform2f(dragVelocityLocation, dragVelocity.x, dragVelocity.y);
+
+                                  gl.drawArrays(gl.TRIANGLES, 0, 6);
 
       animationRef.current = requestAnimationFrame(render);
     };
@@ -1057,7 +1106,7 @@ export default function WebGLVisualizer({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [frequency, isPlaying, waveType, analyserNode, visualStyle, colorPalette, speed, intensity, complexity, symmetry, bloom, binauralEnabled, binauralFreq, isochronicEnabled, isochronicFreq, isochronicDepth]);
+  }, [frequency, isPlaying, waveType, analyserNode, visualStyle, colorPalette, speed, intensity, complexity, symmetry, bloom, binauralEnabled, binauralFreq, isochronicEnabled, isochronicFreq, isochronicDepth, touchPoints, dragVelocity]);
 
   return (
     <canvas

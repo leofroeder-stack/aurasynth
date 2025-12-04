@@ -33,6 +33,11 @@ export default function FrequencyGenerator() {
   const containerRef = useRef(null);
   const [analyserNode, setAnalyserNode] = useState(null);
   
+  // Touch interaction state
+  const [touchPoints, setTouchPoints] = useState([]);
+  const [dragVelocity, setDragVelocity] = useState({ x: 0, y: 0 });
+  const lastTouchRef = useRef({ x: 0, y: 0, time: 0 });
+  
   // Binaural & Isochronic beats
   const [binauralEnabled, setBinauralEnabled] = useState(false);
   const [binauralFreq, setBinauralFreq] = useState(10);
@@ -408,6 +413,87 @@ export default function FrequencyGenerator() {
     };
   }, [stopOscillator, stopAudioFile]);
 
+  // Touch interaction handlers
+  const getNormalizedCoords = useCallback((clientX, clientY) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    const y = -(((clientY - rect.top) / rect.height) * 2 - 1);
+    return { x, y };
+  }, []);
+
+  const handleTouchStart = useCallback((e) => {
+    const points = Array.from(e.touches).map(touch => 
+      getNormalizedCoords(touch.clientX, touch.clientY)
+    );
+    setTouchPoints(points);
+    if (e.touches.length > 0) {
+      const touch = e.touches[0];
+      lastTouchRef.current = { 
+        x: touch.clientX, 
+        y: touch.clientY, 
+        time: Date.now() 
+      };
+    }
+  }, [getNormalizedCoords]);
+
+  const handleTouchMove = useCallback((e) => {
+    const points = Array.from(e.touches).map(touch => 
+      getNormalizedCoords(touch.clientX, touch.clientY)
+    );
+    setTouchPoints(points);
+    
+    if (e.touches.length > 0) {
+      const touch = e.touches[0];
+      const now = Date.now();
+      const dt = (now - lastTouchRef.current.time) / 1000;
+      if (dt > 0) {
+        const vx = (touch.clientX - lastTouchRef.current.x) / (window.innerWidth * dt) * 2;
+        const vy = -(touch.clientY - lastTouchRef.current.y) / (window.innerHeight * dt) * 2;
+        setDragVelocity({ x: vx * 0.1, y: vy * 0.1 });
+      }
+      lastTouchRef.current = { x: touch.clientX, y: touch.clientY, time: now };
+    }
+  }, [getNormalizedCoords]);
+
+  const handleTouchEnd = useCallback((e) => {
+    const points = Array.from(e.touches).map(touch => 
+      getNormalizedCoords(touch.clientX, touch.clientY)
+    );
+    setTouchPoints(points);
+    if (e.touches.length === 0) {
+      // Decay drag velocity
+      setTimeout(() => setDragVelocity({ x: 0, y: 0 }), 500);
+    }
+  }, [getNormalizedCoords]);
+
+  const handleMouseDown = useCallback((e) => {
+    const point = getNormalizedCoords(e.clientX, e.clientY);
+    setTouchPoints([point]);
+    lastTouchRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+  }, [getNormalizedCoords]);
+
+  const handleMouseMove = useCallback((e) => {
+    if (e.buttons !== 1) return;
+    const point = getNormalizedCoords(e.clientX, e.clientY);
+    setTouchPoints([point]);
+    
+    const now = Date.now();
+    const dt = (now - lastTouchRef.current.time) / 1000;
+    if (dt > 0) {
+      const vx = (e.clientX - lastTouchRef.current.x) / (window.innerWidth * dt) * 2;
+      const vy = -(e.clientY - lastTouchRef.current.y) / (window.innerHeight * dt) * 2;
+      setDragVelocity({ x: vx * 0.1, y: vy * 0.1 });
+    }
+    lastTouchRef.current = { x: e.clientX, y: e.clientY, time: now };
+  }, [getNormalizedCoords]);
+
+  const handleMouseUp = useCallback(() => {
+    setTouchPoints([]);
+    setTimeout(() => setDragVelocity({ x: 0, y: 0 }), 500);
+  }, []);
+
   return (
     <div ref={containerRef} className={`min-h-screen text-white overflow-hidden relative ${isFullscreen ? 'bg-black' : 'bg-[#0a0a0f]'}`} style={isFullscreen ? { paddingTop: 'env(safe-area-inset-top)', backgroundColor: '#000000' } : undefined}>
       {/* Fullscreen frequency control overlay */}
@@ -420,7 +506,16 @@ export default function FrequencyGenerator() {
       )}
 
       {/* WebGL Background */}
-      <div className="absolute inset-0 pointer-events-none">
+      <div 
+        className="absolute inset-0"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
         <WebGLVisualizer
                         frequency={frequency}
                         isPlaying={isPlaying}
@@ -439,6 +534,8 @@ export default function FrequencyGenerator() {
                         isochronicEnabled={isochronicEnabled}
                         isochronicFreq={isochronicFreq}
                         isochronicDepth={isochronicDepth}
+                        touchPoints={touchPoints}
+                        dragVelocity={dragVelocity}
                       />
       </div>
 
