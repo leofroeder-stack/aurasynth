@@ -520,7 +520,7 @@ export default function FrequencyGenerator() {
               exit={{ opacity: 0, y: -20 }}
               className="absolute top-20 left-4 right-4 md:left-8 md:right-8 z-20"
             >
-              <div className="backdrop-blur-xl bg-black/50 rounded-2xl border border-white/10 p-6">
+              <div className="backdrop-blur-xl bg-black/50 rounded-2xl border border-white/10 p-6 max-h-[70vh] overflow-y-auto">
                 <VisualControls
                   visualStyle={visualStyle}
                   setVisualStyle={setVisualStyle}
