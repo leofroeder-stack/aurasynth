@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Sparkles, Palette, Zap, Layers, RotateCcw, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sparkles, Palette, Zap, Layers, RotateCcw, Sun, Shuffle, RotateCw } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function VisualControls({
@@ -42,18 +43,42 @@ export default function VisualControls({
       ];
 
   const colorPalettes = [
-        { value: 'cyber', label: 'Cyber', colors: ['#00f0ff', '#ff00aa', '#7b00ff'] },
-        { value: 'fire', label: 'Fire', colors: ['#ff4400', '#ff8800', '#ffcc00'] },
-        { value: 'nature', label: 'Nature', colors: ['#00ff88', '#88ff00', '#00ffcc'] },
-        { value: 'ocean', label: 'Ocean', colors: ['#0044ff', '#0088ff', '#00ccff'] },
-        { value: 'sunset', label: 'Sunset', colors: ['#ff6644', '#ff44aa', '#ffaa44'] },
-        { value: 'neon', label: 'Neon', colors: ['#ff00ff', '#00ffff', '#ffff00'] },
-        { value: 'aurora', label: 'Aurora', colors: ['#00ff99', '#6600ff', '#00ccff'] },
-        { value: 'lava', label: 'Lava', colors: ['#ff0000', '#ff6600', '#330000'] },
-        { value: 'ice', label: 'Ice', colors: ['#aaffff', '#4488ff', '#ffffff'] },
-        { value: 'candy', label: 'Candy', colors: ['#ff69b4', '#ff1493', '#ff88cc'] },
-        { value: 'galaxy', label: 'Galaxy', colors: ['#9933ff', '#ff33cc', '#3366ff'] },
-      ];
+                { value: 'cyber', label: 'Cyber', colors: ['#00f0ff', '#ff00aa', '#7b00ff'] },
+                { value: 'fire', label: 'Fire', colors: ['#ff4400', '#ff8800', '#ffcc00'] },
+                { value: 'nature', label: 'Nature', colors: ['#00ff88', '#88ff00', '#00ffcc'] },
+                { value: 'ocean', label: 'Ocean', colors: ['#0044ff', '#0088ff', '#00ccff'] },
+                { value: 'sunset', label: 'Sunset', colors: ['#ff6644', '#ff44aa', '#ffaa44'] },
+                { value: 'neon', label: 'Neon', colors: ['#ff00ff', '#00ffff', '#ffff00'] },
+                { value: 'aurora', label: 'Aurora', colors: ['#00ff99', '#6600ff', '#00ccff'] },
+                { value: 'lava', label: 'Lava', colors: ['#ff0000', '#ff6600', '#330000'] },
+                { value: 'ice', label: 'Ice', colors: ['#aaffff', '#4488ff', '#ffffff'] },
+                { value: 'candy', label: 'Candy', colors: ['#ff69b4', '#ff1493', '#ff88cc'] },
+                { value: 'galaxy', label: 'Galaxy', colors: ['#9933ff', '#ff33cc', '#3366ff'] },
+              ];
+
+    const randomizeSettings = () => {
+      setSpeed(Math.round((0.1 + Math.random() * 2.9) * 10) / 10);
+      setIntensity(Math.round((0.1 + Math.random() * 1.9) * 10) / 10);
+      setComplexity(Math.round((0.5 + Math.random() * 1.5) * 10) / 10);
+      setSymmetry(Math.floor(2 + Math.random() * 10));
+      setBloom(Math.round(Math.random() * 20) / 20);
+    };
+
+    const resetToDefaults = () => {
+      setSpeed(1);
+      setIntensity(1);
+      setComplexity(1);
+      setSymmetry(4);
+      setBloom(0.5);
+    };
+
+    const randomizeAll = () => {
+      const randomStyle = visualStyles[Math.floor(Math.random() * visualStyles.length)];
+      const randomPalette = colorPalettes[Math.floor(Math.random() * colorPalettes.length)];
+      setVisualStyle(randomStyle.value);
+      setColorPalette(randomPalette.value);
+      randomizeSettings();
+    };
 
   const sliderConfig = [
     { key: 'speed', label: 'Speed', icon: Zap, value: speed, setValue: setSpeed, min: 0.1, max: 3, step: 0.1 },
@@ -130,28 +155,59 @@ export default function VisualControls({
         {sliderConfig.map((config) => {
           const Icon = config.icon;
           return (
-            <div key={config.key} className="space-y-2">
-              <Label className="text-sm text-gray-400 flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <Icon className="w-3 h-3" />
-                  {config.label}
-                </span>
-                <span className="text-cyan-400 text-xs tabular-nums">
-                  {config.value.toFixed(config.key === 'symmetry' ? 0 : 1)}
-                </span>
-              </Label>
-              <Slider
-                value={[config.value]}
-                onValueChange={([val]) => config.setValue(val)}
-                min={config.min}
-                max={config.max}
-                step={config.step}
-                className="w-full"
-              />
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+                    <div key={config.key} className="space-y-2">
+                              <Label className="text-sm text-gray-400 flex items-center justify-between">
+                                <span className="flex items-center gap-2">
+                                  <Icon className="w-3 h-3" />
+                                  {config.label}
+                                </span>
+                                <span className="text-cyan-400 text-xs tabular-nums">
+                                  {config.value.toFixed(config.key === 'symmetry' ? 0 : 1)}
+                                </span>
+                              </Label>
+                              <Slider
+                                value={[config.value]}
+                                onValueChange={([val]) => config.setValue(val)}
+                                min={config.min}
+                                max={config.max}
+                                step={config.step}
+                                className="w-full"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Quick Actions */}
+                      <div className="flex justify-center gap-3 pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={randomizeSettings}
+                          className="border-white/10 text-gray-300 hover:bg-white/10 hover:text-white gap-2"
+                        >
+                          <Shuffle className="w-3 h-3" />
+                          Randomize Settings
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={randomizeAll}
+                          className="border-fuchsia-500/50 text-fuchsia-400 hover:bg-fuchsia-500/10 gap-2"
+                        >
+                          <Shuffle className="w-3 h-3" />
+                          Randomize All
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={resetToDefaults}
+                          className="border-white/10 text-gray-300 hover:bg-white/10 hover:text-white gap-2"
+                        >
+                          <RotateCw className="w-3 h-3" />
+                          Reset
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
