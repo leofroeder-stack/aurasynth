@@ -313,7 +313,7 @@ export default function AmbientAnalyzer({ onApplyFrequency, onApplyVisualStyle }
       </Button>
 
       <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) stopListening(); }}>
-        <DialogContent className="bg-gray-900 border-white/10 text-white max-w-md">
+        <DialogContent className="bg-gray-900 border-white/10 text-white max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
@@ -331,7 +331,7 @@ export default function AmbientAnalyzer({ onApplyFrequency, onApplyVisualStyle }
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-6 pt-2">
+          <div className="space-y-4 pt-2">
             {/* Mic Control */}
             <div className="flex justify-center">
               <motion.button
@@ -363,92 +363,263 @@ export default function AmbientAnalyzer({ onApplyFrequency, onApplyVisualStyle }
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="space-y-4"
                 >
-                  {/* Stress Level Meter */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Stress Level</span>
-                      <span className={stressInfo.color}>{stressInfo.label}</span>
-                    </div>
-                    <div className="h-3 bg-white/10 rounded-full overflow-hidden">
-                      <motion.div
-                        className={`h-full ${stressInfo.bg.replace('/20', '')}`}
-                        animate={{ width: `${stressLevel * 100}%` }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500">{stressInfo.recommendation}</p>
-                  </div>
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 bg-white/5">
+                      <TabsTrigger value="analyze" className="data-[state=active]:bg-cyan-500/20 text-xs">
+                        <Brain className="w-3 h-3 mr-1" /> Analysis
+                      </TabsTrigger>
+                      <TabsTrigger value="history" className="data-[state=active]:bg-cyan-500/20 text-xs">
+                        <TrendingUp className="w-3 h-3 mr-1" /> Trends
+                      </TabsTrigger>
+                      <TabsTrigger value="visuals" className="data-[state=active]:bg-cyan-500/20 text-xs">
+                        <Eye className="w-3 h-3 mr-1" /> Visuals
+                      </TabsTrigger>
+                    </TabsList>
 
-                  {/* Analysis Details */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-                      <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
-                        <Waves className="w-3 h-3" />
-                        Dominant Freq
+                    <TabsContent value="analyze" className="space-y-4 mt-4">
+                      {/* Environment Score */}
+                      <div className="flex items-center justify-center gap-4">
+                        <div className="text-center">
+                          <div className="text-4xl font-thin text-cyan-400">{environmentScore || '--'}</div>
+                          <div className="text-xs text-gray-500">Environment Score</div>
+                        </div>
+                        <div className="w-px h-12 bg-white/10" />
+                        <div className="text-center">
+                          <div className={`text-2xl font-light ${stressInfo.color}`}>{stressInfo.label}</div>
+                          <div className="text-xs text-gray-500">Stress Level</div>
+                        </div>
                       </div>
-                      <div className="text-lg font-light text-cyan-400">
-                        {dominantFrequency ? `${dominantFrequency} Hz` : '-- Hz'}
-                      </div>
-                    </div>
-                    <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-                      <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
-                        <Zap className="w-3 h-3" />
-                        Pattern
-                      </div>
-                      <div className="text-lg font-light text-fuchsia-400 capitalize">
-                        {noisePattern}
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Recommendations */}
-                  {recommendations.length > 0 && (
-                    <div className="space-y-2">
+                      {/* Stress Level Meter */}
+                      <div className="space-y-2">
+                        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                          <motion.div
+                            className={`h-full ${stressInfo.bg}`}
+                            animate={{ width: `${stressLevel * 100}%` }}
+                            transition={{ duration: 0.3 }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">{stressInfo.recommendation}</p>
+                      </div>
+
+                      {/* Frequency Bands */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="bg-white/5 rounded-lg p-2 text-center border border-white/10">
+                          <div className="text-xs text-gray-500 mb-1">Low</div>
+                          <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                            <motion.div className="h-full bg-blue-400" animate={{ width: `${Math.min(100, frequencyBands.low / 2)}%` }} />
+                          </div>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-2 text-center border border-white/10">
+                          <div className="text-xs text-gray-500 mb-1">Mid</div>
+                          <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                            <motion.div className="h-full bg-green-400" animate={{ width: `${Math.min(100, frequencyBands.mid / 2)}%` }} />
+                          </div>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-2 text-center border border-white/10">
+                          <div className="text-xs text-gray-500 mb-1">High</div>
+                          <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                            <motion.div className="h-full bg-purple-400" animate={{ width: `${Math.min(100, frequencyBands.high / 2)}%` }} />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Analysis Details */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+                          <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
+                            <Waves className="w-3 h-3" />
+                            Dominant Freq
+                          </div>
+                          <div className="text-lg font-light text-cyan-400">
+                            {dominantFrequency ? `${dominantFrequency} Hz` : '-- Hz'}
+                          </div>
+                        </div>
+                        <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+                          <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
+                            <span>{noisePattern?.icon || '🔊'}</span>
+                            Pattern
+                          </div>
+                          <div className="text-sm font-light text-fuchsia-400 capitalize">
+                            {noisePattern?.type || 'analyzing'}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">{noisePattern?.desc}</div>
+                        </div>
+                      </div>
+
+                      {/* Recommendations */}
+                      {recommendations.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="text-sm text-gray-400 flex items-center gap-2">
+                            <Heart className="w-4 h-4 text-cyan-400" />
+                            Recommended Frequencies
+                          </h4>
+                          <div className="grid grid-cols-2 gap-2">
+                            {recommendations.map((rec, i) => (
+                              <motion.button
+                                key={rec.frequency}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: i * 0.05 }}
+                                onClick={() => applyRecommendation(rec)}
+                                className="bg-white/5 hover:bg-cyan-500/10 border border-white/10 hover:border-cyan-500/50 rounded-xl p-3 text-left transition-all"
+                              >
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <div className="text-sm font-medium text-white">{rec.frequency} Hz</div>
+                                    <div className="text-xs text-gray-500">{rec.label}</div>
+                                  </div>
+                                </div>
+                                <div className="text-xs text-gray-400 mt-1">{rec.effect}</div>
+                                <div className="text-xs text-cyan-400 mt-2">Apply + {rec.visualStyle} →</div>
+                              </motion.button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="history" className="space-y-4 mt-4">
+                      {/* Real-time stress chart */}
+                      <div className="space-y-2">
+                        <h4 className="text-xs text-gray-500 uppercase tracking-wider">Real-time Stress Level</h4>
+                        <div className="bg-white/5 rounded-xl p-3 border border-white/10 h-32">
+                          {realtimeHistory.length > 2 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart data={realtimeHistory}>
+                                <defs>
+                                  <linearGradient id="stressGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
+                                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                                  </linearGradient>
+                                </defs>
+                                <XAxis dataKey="time" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                                <YAxis domain={[0, 1]} tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                                <Tooltip 
+                                  contentStyle={{ backgroundColor: '#1f2937', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                                  labelStyle={{ color: '#9ca3af' }}
+                                />
+                                <Area type="monotone" dataKey="stress" stroke="#06b6d4" fill="url(#stressGradient)" strokeWidth={2} />
+                              </AreaChart>
+                            </ResponsiveContainer>
+                          ) : (
+                            <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+                              Collecting data...
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Environment score chart */}
+                      <div className="space-y-2">
+                        <h4 className="text-xs text-gray-500 uppercase tracking-wider">Environment Quality</h4>
+                        <div className="bg-white/5 rounded-xl p-3 border border-white/10 h-32">
+                          {realtimeHistory.length > 2 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={realtimeHistory}>
+                                <XAxis dataKey="time" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                                <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                                <Tooltip 
+                                  contentStyle={{ backgroundColor: '#1f2937', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                                  labelStyle={{ color: '#9ca3af' }}
+                                />
+                                <Line type="monotone" dataKey="env" stroke="#a855f7" strokeWidth={2} dot={false} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          ) : (
+                            <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+                              Collecting data...
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Stats summary */}
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="bg-white/5 rounded-lg p-2 border border-white/10">
+                          <div className="text-lg font-light text-cyan-400">
+                            {realtimeHistory.length > 0 
+                              ? (realtimeHistory.reduce((a, b) => a + b.stress, 0) / realtimeHistory.length * 100).toFixed(0) + '%'
+                              : '--'}
+                          </div>
+                          <div className="text-xs text-gray-500">Avg Stress</div>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-2 border border-white/10">
+                          <div className="text-lg font-light text-green-400">
+                            {realtimeHistory.length > 0 
+                              ? (Math.min(...realtimeHistory.map(h => h.stress)) * 100).toFixed(0) + '%'
+                              : '--'}
+                          </div>
+                          <div className="text-xs text-gray-500">Lowest</div>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-2 border border-white/10">
+                          <div className="text-lg font-light text-red-400">
+                            {realtimeHistory.length > 0 
+                              ? (Math.max(...realtimeHistory.map(h => h.stress)) * 100).toFixed(0) + '%'
+                              : '--'}
+                          </div>
+                          <div className="text-xs text-gray-500">Highest</div>
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="visuals" className="space-y-4 mt-4">
                       <h4 className="text-sm text-gray-400 flex items-center gap-2">
-                        <span className="text-cyan-400">✦</span>
-                        Recommended Frequencies
+                        <Eye className="w-4 h-4 text-fuchsia-400" />
+                        Recommended Visuals for {stressInfo.label} Stress
                       </h4>
                       <div className="space-y-2">
-                        {recommendations.map((rec, i) => (
+                        {visualSuggestions.map((suggestion, i) => (
                           <motion.button
-                            key={rec.frequency}
+                            key={suggestion.style}
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: i * 0.1 }}
-                            onClick={() => applyRecommendation(rec)}
-                            className="w-full bg-white/5 hover:bg-cyan-500/10 border border-white/10 hover:border-cyan-500/50 rounded-xl p-3 text-left transition-all"
+                            onClick={() => applyVisualSuggestion(suggestion)}
+                            className="w-full bg-white/5 hover:bg-fuchsia-500/10 border border-white/10 hover:border-fuchsia-500/50 rounded-xl p-4 text-left transition-all"
                           >
                             <div className="flex justify-between items-center">
                               <div>
-                                <div className="text-sm font-medium text-white">{rec.frequency} Hz</div>
-                                <div className="text-xs text-gray-500">{rec.label}</div>
+                                <div className="text-sm font-medium text-white capitalize">{suggestion.style}</div>
+                                <div className="text-xs text-gray-500 capitalize">Palette: {suggestion.palette}</div>
                               </div>
-                              <div className="text-xs text-cyan-400">Apply →</div>
+                              <div className="text-xs text-fuchsia-400">Apply →</div>
                             </div>
-                            <div className="text-xs text-gray-400 mt-1">{rec.effect}</div>
+                            <div className="text-xs text-gray-400 mt-2">{suggestion.reason}</div>
                           </motion.button>
                         ))}
                       </div>
-                    </div>
-                  )}
+
+                      <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                        <h5 className="text-xs text-gray-500 uppercase tracking-wider mb-2">Why These Visuals?</h5>
+                        <p className="text-xs text-gray-400">
+                          {stressInfo.key === 'calm' && 'Gentle, nature-inspired visuals maintain your peaceful state without overstimulation.'}
+                          {stressInfo.key === 'moderate' && 'Balanced patterns with soothing colors help ease tension and promote relaxation.'}
+                          {stressInfo.key === 'elevated' && 'Grounding cymatics and hypnotic spirals help release accumulated stress.'}
+                          {stressInfo.key === 'high' && 'Cool-toned, structured visuals create a sense of order and calm.'}
+                          {stressInfo.key === 'extreme' && 'Simple, predictable patterns reduce sensory overload and promote stability.'}
+                        </p>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* History */}
+            {/* History when not listening */}
             {!isListening && analysisHistory.length > 0 && (
               <div className="space-y-2">
-                <h4 className="text-xs text-gray-500 uppercase tracking-wider">Recent Analysis</h4>
-                <div className="space-y-1">
-                  {analysisHistory.map((entry, i) => (
-                    <div key={i} className="flex justify-between text-xs text-gray-400 bg-white/5 rounded-lg px-3 py-2">
+                <h4 className="text-xs text-gray-500 uppercase tracking-wider">Session History</h4>
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {analysisHistory.slice().reverse().map((entry, i) => (
+                    <div key={i} className="flex justify-between items-center text-xs text-gray-400 bg-white/5 rounded-lg px-3 py-2">
                       <span>{entry.time}</span>
-                      <span className={getStressInfo(entry.stress).color}>
-                        {getStressInfo(entry.stress).label}
+                      <span className={getStressInfo(parseFloat(entry.avgStress || entry.stress)).color}>
+                        {getStressInfo(parseFloat(entry.avgStress || entry.stress)).label}
                       </span>
                       <span className="capitalize">{entry.pattern}</span>
+                      <span className="text-cyan-400">{entry.envScore || '--'}</span>
                     </div>
                   ))}
                 </div>
