@@ -1,26 +1,54 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Mic, MicOff, Activity, Waves, Zap, X } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Mic, MicOff, Activity, Waves, Zap, X, TrendingUp, Eye, Volume2, Brain, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Area, AreaChart, Tooltip } from 'recharts';
 
 const STRESS_THRESHOLDS = {
-  low: { max: 0.3, label: 'Calm', color: 'text-green-400', bg: 'bg-green-400/20', recommendation: 'Your environment is peaceful. Maintain with alpha waves.' },
-  moderate: { max: 0.55, label: 'Moderate', color: 'text-yellow-400', bg: 'bg-yellow-400/20', recommendation: 'Some noise detected. Theta waves can help you relax.' },
-  elevated: { max: 0.75, label: 'Elevated', color: 'text-orange-400', bg: 'bg-orange-400/20', recommendation: 'Elevated stress patterns. Delta frequencies recommended.' },
-  high: { max: 1, label: 'High', color: 'text-red-400', bg: 'bg-red-400/20', recommendation: 'High stress environment. Deep healing frequencies suggested.' }
+  low: { max: 0.25, label: 'Calm', color: 'text-green-400', bg: 'bg-green-400', recommendation: 'Your environment is peaceful. Maintain with alpha waves for sustained calm.' },
+  moderate: { max: 0.45, label: 'Moderate', color: 'text-yellow-400', bg: 'bg-yellow-400', recommendation: 'Some environmental noise detected. Theta waves can help you relax and center.' },
+  elevated: { max: 0.65, label: 'Elevated', color: 'text-orange-400', bg: 'bg-orange-400', recommendation: 'Elevated stress patterns detected. Delta frequencies recommended for deep relaxation.' },
+  high: { max: 0.85, label: 'High', color: 'text-red-400', bg: 'bg-red-400', recommendation: 'High stress environment. Deep healing frequencies and calming visuals suggested.' },
+  extreme: { max: 1, label: 'Extreme', color: 'text-red-500', bg: 'bg-red-500', recommendation: 'Very high stress levels. Immediate calming intervention recommended.' }
 };
 
 const FREQUENCY_RECOMMENDATIONS = [
-  { frequency: 432, label: 'Universal Healing', effect: 'Reduces anxiety, promotes harmony', stressRange: [0, 0.3] },
-  { frequency: 528, label: 'Love & DNA Repair', effect: 'Transformation and miracles', stressRange: [0, 0.4] },
-  { frequency: 396, label: 'Liberation', effect: 'Releases fear and guilt', stressRange: [0.3, 0.6] },
-  { frequency: 285, label: 'Tissue Healing', effect: 'Regenerates and heals tissue', stressRange: [0.4, 0.7] },
-  { frequency: 174, label: 'Pain Reduction', effect: 'Natural anesthetic, reduces pain', stressRange: [0.5, 0.8] },
-  { frequency: 40, label: 'Gamma Clarity', effect: 'Focus and cognitive enhancement', stressRange: [0.2, 0.5] },
-  { frequency: 7.83, label: 'Schumann Resonance', effect: 'Earth\'s frequency, grounding', stressRange: [0.3, 0.7] },
-  { frequency: 111, label: 'Cell Regeneration', effect: 'Deep healing and regeneration', stressRange: [0.6, 1] },
+  { frequency: 432, label: 'Universal Healing', effect: 'Reduces anxiety, promotes harmony', stressRange: [0, 0.3], visualStyle: 'aurora', colorPalette: 'nature' },
+  { frequency: 528, label: 'Love & DNA Repair', effect: 'Transformation and miracles', stressRange: [0, 0.4], visualStyle: 'mandala', colorPalette: 'aurora' },
+  { frequency: 396, label: 'Liberation', effect: 'Releases fear and guilt', stressRange: [0.3, 0.6], visualStyle: 'nebula', colorPalette: 'galaxy' },
+  { frequency: 285, label: 'Tissue Healing', effect: 'Regenerates and heals tissue', stressRange: [0.4, 0.7], visualStyle: 'liquid', colorPalette: 'ocean' },
+  { frequency: 174, label: 'Pain Reduction', effect: 'Natural anesthetic, reduces pain', stressRange: [0.5, 0.8], visualStyle: 'chladni', colorPalette: 'ice' },
+  { frequency: 40, label: 'Gamma Clarity', effect: 'Focus and cognitive enhancement', stressRange: [0.2, 0.5], visualStyle: 'geometric', colorPalette: 'cyber' },
+  { frequency: 7.83, label: 'Schumann Resonance', effect: 'Earth\'s frequency, grounding', stressRange: [0.3, 0.7], visualStyle: 'plasma', colorPalette: 'nature' },
+  { frequency: 111, label: 'Cell Regeneration', effect: 'Deep healing and regeneration', stressRange: [0.6, 1], visualStyle: 'spiral', colorPalette: 'sunset' },
+  { frequency: 639, label: 'Heart Connection', effect: 'Harmonizes relationships', stressRange: [0.2, 0.5], visualStyle: 'kaleidoscope', colorPalette: 'candy' },
+  { frequency: 852, label: 'Intuition', effect: 'Awakens inner strength', stressRange: [0.1, 0.4], visualStyle: 'fractal', colorPalette: 'galaxy' },
 ];
+
+const VISUAL_SUGGESTIONS = {
+  calm: [
+    { style: 'aurora', palette: 'nature', reason: 'Gentle waves maintain peaceful state' },
+    { style: 'nebula', palette: 'ocean', reason: 'Soft cosmic clouds for meditation' },
+  ],
+  moderate: [
+    { style: 'mandala', palette: 'aurora', reason: 'Sacred geometry promotes balance' },
+    { style: 'liquid', palette: 'ocean', reason: 'Fluid motion calms the mind' },
+  ],
+  elevated: [
+    { style: 'chladni', palette: 'ice', reason: 'Cymatics patterns ground energy' },
+    { style: 'spiral', palette: 'sunset', reason: 'Hypnotic motion releases tension' },
+  ],
+  high: [
+    { style: 'plasma', palette: 'ice', reason: 'Cool tones reduce mental heat' },
+    { style: 'rings', palette: 'ocean', reason: 'Concentric patterns center focus' },
+  ],
+  extreme: [
+    { style: 'waveform', palette: 'ice', reason: 'Simple patterns reduce overstimulation' },
+    { style: 'geometric', palette: 'ocean', reason: 'Structured visuals create stability' },
+  ]
+};
 
 export default function AmbientAnalyzer({ onApplyFrequency, onApplyVisualStyle }) {
   const [isOpen, setIsOpen] = useState(false);
