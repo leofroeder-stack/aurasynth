@@ -188,14 +188,30 @@ export default function AmbientAnalyzer({ onApplyFrequency, onApplyVisualStyle }
       
       audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
       analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 2048;
+      analyserRef.current.fftSize = 4096; // Higher resolution for better analysis
+      analyserRef.current.smoothingTimeConstant = 0.8;
       
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
       
       dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
+      peakHistoryRef.current = [];
+      setRealtimeHistory([]);
       
       setIsListening(true);
+      
+      // Record history every second
+      historyIntervalRef.current = setInterval(() => {
+        setRealtimeHistory(prev => {
+          const newEntry = {
+            time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            stress: stressLevel,
+            env: environmentScore || 50
+          };
+          const updated = [...prev, newEntry].slice(-30); // Keep last 30 seconds
+          return updated;
+        });
+      }, 1000);
       
       const analyze = () => {
         if (!analyserRef.current) return;
@@ -203,20 +219,25 @@ export default function AmbientAnalyzer({ onApplyFrequency, onApplyVisualStyle }
         analyserRef.current.getByteFrequencyData(dataArrayRef.current);
         const dataArray = Array.from(dataArrayRef.current);
         
-        // Calculate stress from audio intensity and variance
-        const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-        const max = Math.max(...dataArray);
-        const variance = dataArray.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / dataArray.length;
+        // Analyze frequency bands
+        const bands = analyzeFrequencyBands(dataArray);
+        setFrequencyBands(bands);
         
-        // Normalize stress level (0-1)
-        const intensity = avg / 255;
-        const chaos = Math.sqrt(variance) / 128;
-        const stress = Math.min(1, (intensity * 0.6 + chaos * 0.4));
+        // Calculate stress using sophisticated algorithm
+        const stress = estimateStressFromAudio(dataArray, peakHistoryRef.current);
+        
+        // Track peaks for sudden change detection
+        const max = Math.max(...dataArray);
+        peakHistoryRef.current = [...peakHistoryRef.current.slice(-10), max];
+        
+        const pattern = detectNoisePattern(dataArray, bands);
+        const envScore = calculateEnvironmentScore(stress, pattern, bands);
         
         setStressLevel(stress);
-        setNoisePattern(detectNoisePattern(dataArray));
+        setNoisePattern(pattern);
+        setEnvironmentScore(envScore);
         setDominantFrequency(findDominantFrequency(dataArray, audioContextRef.current.sampleRate));
-        setRecommendations(generateRecommendations(stress, detectNoisePattern(dataArray)));
+        setRecommendations(generateRecommendations(stress, pattern));
         
         animationRef.current = requestAnimationFrame(analyze);
       };
@@ -225,7 +246,7 @@ export default function AmbientAnalyzer({ onApplyFrequency, onApplyVisualStyle }
     } catch (error) {
       console.error('Microphone access denied:', error);
     }
-  }, []);
+  }, [stressLevel, environmentScore]);
 
   const stopListening = useCallback(() => {
     if (animationRef.current) {
