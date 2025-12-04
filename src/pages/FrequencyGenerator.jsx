@@ -8,6 +8,7 @@ import AudioControls from '../components/frequency/AudioControls';
 import VisualControls from '../components/frequency/VisualControls';
 import RecordingControls from '../components/frequency/RecordingControls';
 import BeatsControls from '../components/frequency/BeatsControls';
+import GestureController from '../components/frequency/GestureController';
 
 export default function FrequencyGenerator() {
   const [frequency, setFrequency] = useState(440);
@@ -473,6 +474,16 @@ export default function FrequencyGenerator() {
                                                                         canvasRef={canvasRef}
                                                                         isPlaying={isPlaying}
                                                                       />
+                                                                      <GestureController
+                                                                        onSpeedChange={setSpeed}
+                                                                        onIntensityChange={setIntensity}
+                                                                        onComplexityChange={setComplexity}
+                                                                        onBloomChange={setBloom}
+                                                                        speed={speed}
+                                                                        intensity={intensity}
+                                                                        complexity={complexity}
+                                                                        bloom={bloom}
+                                                                      />
                                                                     </>
                                                                   }
                   />
@@ -512,9 +523,9 @@ export default function FrequencyGenerator() {
               <div className="backdrop-blur-xl bg-black/50 rounded-2xl border border-white/10 p-6">
                 <VisualControls
                   visualStyle={visualStyle}
-                  setVisualStyle={(style) => { setVisualStyle(style); setShowVisualControls(false); }}
+                  setVisualStyle={setVisualStyle}
                   colorPalette={colorPalette}
-                  setColorPalette={(palette) => { setColorPalette(palette); setShowVisualControls(false); }}
+                  setColorPalette={setColorPalette}
                   speed={speed}
                   setSpeed={setSpeed}
                   intensity={intensity}
