@@ -9,9 +9,11 @@ import VisualControls from '../components/frequency/VisualControls';
 import RecordingControls from '../components/frequency/RecordingControls';
 import BeatsControls from '../components/frequency/BeatsControls';
 import GestureController from '../components/frequency/GestureController';
+import MultiFrequencyLayers from '../components/frequency/MultiFrequencyLayers';
 
 export default function FrequencyGenerator() {
   const [frequency, setFrequency] = useState(440);
+  const [layers, setLayers] = useState([]); // Additional frequency layers
   const [minFreq, setMinFreq] = useState(20);
   const [maxFreq, setMaxFreq] = useState(20000);
   const [volume, setVolume] = useState(0.5);
@@ -52,6 +54,7 @@ export default function FrequencyGenerator() {
   const pannerRightRef = useRef(null);
   const isochronicGainRef = useRef(null);
   const isochronicIntervalRef = useRef(null);
+  const layerOscillatorsRef = useRef([]); // For multi-frequency layers
 
   const initAudio = useCallback(() => {
     if (!audioContextRef.current) {
@@ -149,7 +152,36 @@ export default function FrequencyGenerator() {
     } else {
       gainNodeRef.current.connect(analyserRef.current);
     }
+
+    // Start layer oscillators
+    startLayerOscillators(ctx);
   }, [frequency, volume, waveType, initAudio, binauralEnabled, binauralFreq, isochronicEnabled, isochronicFreq, isochronicDepth]);
+
+  const startLayerOscillators = useCallback((ctx) => {
+    // Stop existing layer oscillators
+    layerOscillatorsRef.current.forEach(({ oscillator, gain }) => {
+      oscillator.stop();
+      oscillator.disconnect();
+      gain.disconnect();
+    });
+    layerOscillatorsRef.current = [];
+
+    // Create oscillators for each enabled layer
+    layers.filter(l => l.enabled).forEach((layer) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = layer.waveType;
+      osc.frequency.setValueAtTime(layer.frequency, ctx.currentTime);
+      gain.gain.setValueAtTime(layer.volume, ctx.currentTime);
+      
+      osc.connect(gain);
+      gain.connect(analyserRef.current);
+      osc.start();
+      
+      layerOscillatorsRef.current.push({ id: layer.id, oscillator: osc, gain });
+    });
+  }, [layers]);
 
   const stopOscillator = useCallback(() => {
     if (oscillatorRef.current) {
@@ -174,6 +206,13 @@ export default function FrequencyGenerator() {
       clearInterval(isochronicIntervalRef.current);
       isochronicIntervalRef.current = null;
     }
+    // Stop layer oscillators
+    layerOscillatorsRef.current.forEach(({ oscillator, gain }) => {
+      oscillator.stop();
+      oscillator.disconnect();
+      gain.disconnect();
+    });
+    layerOscillatorsRef.current = [];
   }, []);
 
   const stopAudioFile = useCallback(() => {
@@ -267,6 +306,13 @@ export default function FrequencyGenerator() {
       startOscillator();
     }
   }, [binauralEnabled, binauralFreq, isochronicEnabled, isochronicFreq, isochronicDepth]);
+
+  // Update layer oscillators when layers change while playing
+  useEffect(() => {
+    if (isPlaying && !audioFile && audioContextRef.current) {
+      startLayerOscillators(audioContextRef.current);
+    }
+  }, [layers, isPlaying, audioFile, startLayerOscillators]);
 
   // Update volume in real-time
   useEffect(() => {
@@ -483,6 +529,11 @@ export default function FrequencyGenerator() {
                                                                         intensity={intensity}
                                                                         complexity={complexity}
                                                                         bloom={bloom}
+                                                                      />
+                                                                      <MultiFrequencyLayers
+                                                                        layers={layers}
+                                                                        setLayers={setLayers}
+                                                                        isPlaying={isPlaying}
                                                                       />
                                                                     </>
                                                                   }
