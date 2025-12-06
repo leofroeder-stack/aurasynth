@@ -40,10 +40,10 @@ export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
   const scanArchiveUrl = async (url) => {
     setIsScanning(true);
     try {
-      // Extract item identifier from archive.org URL
-      const itemMatch = url.match(/archive\.org\/details\/([^\/]+)/);
+      // Extract item identifier from archive.org URL (supports both /details/ and /download/)
+      const itemMatch = url.match(/archive\.org\/(?:details|download)\/([^\/]+)/);
       if (!itemMatch) {
-        alert('Invalid archive.org URL');
+        alert('Invalid archive.org URL. Use format: https://archive.org/details/item-id or https://archive.org/download/item-id');
         setIsScanning(false);
         return;
       }
