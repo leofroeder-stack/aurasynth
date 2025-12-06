@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import TherapyFrequencyPicker from './TherapyFrequencyPicker';
 import AmbientAnalyzer from './AmbientAnalyzer';
 import AudioInputControls from './AudioInputControls';
+import BackgroundAudioMixer from './BackgroundAudioMixer';
 
 export default function AudioControls({ 
   frequency, 
@@ -27,7 +28,9 @@ export default function AudioControls({
   recordingControls,
   onFileUpload,
   audioFileName,
-  onApplyVisualStyle
+  onApplyVisualStyle,
+  audioContext,
+  analyserNode
 }) {
   const [customFreqOpen, setCustomFreqOpen] = useState(false);
   const [customFreqValue, setCustomFreqValue] = useState('');
@@ -79,6 +82,11 @@ export default function AudioControls({
                             onApplyVisualStyle={onApplyVisualStyle || (() => {})} 
                           />
                           <AudioInputControls />
+                          <BackgroundAudioMixer 
+                            audioContext={audioContext}
+                            destinationNode={analyserNode}
+                            isPlaying={isPlaying}
+                          />
                         </div>
 
         <div className="flex items-center gap-2 md:gap-3 flex-wrap">

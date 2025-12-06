@@ -590,10 +590,12 @@ export default function FrequencyGenerator() {
                     onFullscreen={enterFullscreen}
                     onOpenVisuals={() => setShowVisualControls(true)}
                     onApplyVisualStyle={(style, palette) => {
-                      setVisualStyle(style);
-                      setColorPalette(palette);
-                    }}
-                    minFreq={minFreq}
+                                                setVisualStyle(style);
+                                                setColorPalette(palette);
+                                              }}
+                                              audioContext={audioContextRef.current}
+                                              analyserNode={analyserRef.current}
+                                              minFreq={minFreq}
                                           maxFreq={maxFreq}
                                           onFileUpload={handleFileUpload}
                                           audioFileName={audioFileName}
