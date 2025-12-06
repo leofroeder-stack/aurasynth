@@ -755,100 +755,113 @@ export default function WebGLVisualizer({
                               }
             
             vec3 styleChladni(vec2 uv, float time, float freqNorm, float audioSum) {
-        // Animated Chladni plate simulation - sand patterns on vibrating metal
-        vec3 col = vec3(0.0);
-        
-        // Frequency determines the mode numbers (m, n) with smooth transitions
-        float freq = u_frequency;
-        float baseM = freq / 150.0;
-        float baseN = freq / 180.0;
-        
-        // Animate mode numbers with time for dynamic patterns
-        float m = baseM + sin(time * u_speed * 0.5) * 0.5;
-        float n = baseN + cos(time * u_speed * 0.7) * 0.5;
-        
-        // Scale UV to plate coordinates with rotation
-        float rotation = time * u_speed * 0.1 * freqNorm;
-        vec2 p = uv * (2.0 + u_complexity);
-        p = vec2(p.x * cos(rotation) - p.y * sin(rotation), 
-                 p.x * sin(rotation) + p.y * cos(rotation));
-        
-        // Animated displacement based on audio
-        float displacement = sin(time * u_speed * 8.0) * audioSum * 0.1;
-        p += displacement;
-        
-        // Classic Chladni equation with time-varying parameters
-        float phase1 = time * u_speed * 2.0;
-        float phase2 = time * u_speed * 1.5;
-        float chladni1 = cos(m * PI * p.x + phase1) * cos(n * PI * p.y + phase2) 
-                       - cos(n * PI * p.x + phase2) * cos(m * PI * p.y + phase1);
-        
-        // Second harmonic with different phase
-        float m2 = m * 1.5 + sin(time * u_speed);
-        float n2 = n * 1.5 + cos(time * u_speed * 0.8);
-        float chladni2 = cos(m2 * PI * p.x - phase1) * cos(n2 * PI * p.y) 
-                       - cos(n2 * PI * p.x) * cos(m2 * PI * p.y - phase2);
-        
-        // Third harmonic for more complexity
-        float chladni3 = sin(m * PI * p.x * 0.5 + time * u_speed * 3.0) 
-                       * sin(n * PI * p.y * 0.5 + time * u_speed * 2.5);
-        
-        // Mix patterns based on audio intensity
-        float pattern = chladni1 * 0.5 + chladni2 * 0.3 + chladni3 * 0.2 * audioSum;
-        pattern *= (1.0 + audioSum * 2.0); // Amplify with audio
-        
-        // Animated sand accumulation at nodal lines
-        float sandThreshold = 0.1 + sin(time * u_speed * 4.0) * 0.05 * audioSum;
-        float sand = 1.0 - smoothstep(0.0, sandThreshold + audioSum * 0.15, abs(pattern));
-        
-        // Vibrating sand particles
-        float vibFreq = 10.0 + freqNorm * 30.0;
-        float vibration = sin(time * u_speed * vibFreq + p.x * 20.0) 
-                        * sin(time * u_speed * vibFreq * 1.1 + p.y * 20.0) * 0.1;
-        sand += vibration * audioSum;
-        
-        // Animated grain texture - sand particles moving
-        float grainTime = time * u_speed * 2.0;
-        vec2 grainOffset = vec2(sin(grainTime + p.y * 5.0), cos(grainTime + p.x * 5.0)) * 0.02 * audioSum;
-        float grain = hash((p + grainOffset) * 80.0) * 0.2;
-        grain += hash((p - grainOffset) * 120.0 + grainTime) * 0.1;
-        sand = clamp(sand + grain * sand * (1.0 + audioSum), 0.0, 1.0);
-        
-        // Animated plate color (subtle metallic shimmer)
-        float shimmer = sin(time * u_speed * 3.0 + length(p) * 2.0) * 0.02;
-        vec3 plateColor = vec3(0.12 + shimmer, 0.14 + shimmer, 0.18 + shimmer);
-        
-        // Animated sand color based on palette and movement
-        vec3 sandColor = getColor(freqNorm * 2.0 + time * 0.1 + m * 0.05);
-        vec3 naturalSand = vec3(0.9, 0.85, 0.7) + vec3(grain * 0.2);
-        sandColor = mix(sandColor, naturalSand, 0.4);
-        
-        // Combine plate and sand with pulsing intensity
-        float pulseIntensity = u_intensity * (1.0 + sin(time * u_speed * 5.0) * 0.1 * audioSum);
-        col = mix(plateColor, sandColor, sand * pulseIntensity);
-        
-        // Animated metallic reflection ripples
-        float ripple = sin(length(p) * 10.0 - time * u_speed * 5.0) * 0.5 + 0.5;
-        float reflection = pow(max(0.0, 1.0 - abs(pattern)), 4.0) * 0.4 * ripple;
-        col += getColor(time * 0.2 + freqNorm * 3.0) * reflection * (1.0 - sand) * u_bloom;
-        
-        // Glowing nodal lines that pulse with audio
-        float glowPulse = (1.0 + sin(time * u_speed * 8.0) * 0.5) * audioSum;
-        float glow = exp(-abs(pattern) * 2.0) * glowPulse * u_bloom;
-        col += getColor(freqNorm * 2.0 + time * 0.15) * glow * 0.6;
-        
-        // Add particle sparkles on sand
-        float sparkle = pow(hash(p * 200.0 + time * 3.0), 20.0) * sand * audioSum * 2.0;
-        col += getColor(time * 0.5 + freqNorm) * sparkle;
-        
-        // Animated edge with vibration effect
-        float edgeVib = sin(atan(uv.y, uv.x) * u_symmetry + time * u_speed * 2.0) * 0.05 * audioSum;
-        float border = smoothstep(1.8 + edgeVib, 1.4 + edgeVib, length(uv * 1.5));
-        col *= border;
-        col += vec3(0.02) * (1.0 - border);
-        
-        return col;
-      }
+              // Animated Chladni plate simulation - sand patterns on vibrating metal
+              vec3 col = vec3(0.0);
+
+              // Extract frequency bands from audio data for multi-frequency response
+              float bass = 0.0;
+              float mid = 0.0;
+              float high = 0.0;
+              for (int i = 0; i < 32; i++) {
+                if (i < 10) bass += u_audioData[i];
+                else if (i < 20) mid += u_audioData[i];
+                else high += u_audioData[i];
+              }
+              bass /= 10.0;
+              mid /= 10.0;
+              high /= 12.0;
+
+              // Frequency determines the mode numbers (m, n) - now audio-reactive
+              float freq = u_frequency;
+              float baseM = freq / 150.0 + bass * 2.0;
+              float baseN = freq / 180.0 + mid * 2.0;
+
+              // Animate mode numbers with time and music
+              float m = baseM + sin(time * u_speed * 0.5 + bass * 10.0) * (0.5 + bass * 2.0);
+              float n = baseN + cos(time * u_speed * 0.7 + mid * 8.0) * (0.5 + mid * 2.0);
+
+              // Scale UV to plate coordinates with music-driven rotation
+              float rotation = time * u_speed * 0.1 * freqNorm + bass * 0.5;
+              vec2 p = uv * (2.0 + u_complexity + high * 1.5);
+              p = vec2(p.x * cos(rotation) - p.y * sin(rotation), 
+                       p.x * sin(rotation) + p.y * cos(rotation));
+
+              // Music-driven displacement
+              float displacement = sin(time * u_speed * 8.0 + bass * 20.0) * audioSum * 0.2;
+              p += vec2(sin(mid * 15.0), cos(high * 12.0)) * displacement;
+
+              // Classic Chladni equation with music-reactive parameters
+              float phase1 = time * u_speed * 2.0 + bass * 5.0;
+              float phase2 = time * u_speed * 1.5 + mid * 4.0;
+              float chladni1 = cos(m * PI * p.x + phase1) * cos(n * PI * p.y + phase2) 
+                             - cos(n * PI * p.x + phase2) * cos(m * PI * p.y + phase1);
+
+              // Second harmonic responds to mid frequencies
+              float m2 = m * 1.5 + sin(time * u_speed + mid * 10.0);
+              float n2 = n * 1.5 + cos(time * u_speed * 0.8 + mid * 8.0);
+              float chladni2 = cos(m2 * PI * p.x - phase1 + mid * 3.0) * cos(n2 * PI * p.y + mid * 2.0) 
+                             - cos(n2 * PI * p.x + mid * 2.0) * cos(m2 * PI * p.y - phase2 + mid * 3.0);
+
+              // Third harmonic responds to high frequencies
+              float chladni3 = sin(m * PI * p.x * 0.5 + time * u_speed * 3.0 + high * 15.0) 
+                             * sin(n * PI * p.y * 0.5 + time * u_speed * 2.5 + high * 12.0);
+
+              // Mix patterns based on frequency bands
+              float pattern = chladni1 * (0.5 + bass * 0.5) + chladni2 * (0.3 + mid * 0.4) + chladni3 * (0.2 + high * 0.5);
+              pattern *= (1.0 + audioSum * 3.0); // Strong amplification with music
+
+              // Music-reactive sand accumulation
+              float sandThreshold = 0.1 + sin(time * u_speed * 4.0 + bass * 8.0) * 0.05 * audioSum;
+              float sand = 1.0 - smoothstep(0.0, sandThreshold + audioSum * 0.2 + bass * 0.3, abs(pattern));
+
+              // Intense vibrating sand particles - bass-driven
+              float vibFreq = 10.0 + freqNorm * 30.0 + bass * 50.0;
+              float vibration = sin(time * u_speed * vibFreq + p.x * 20.0 + bass * 30.0) 
+                              * sin(time * u_speed * vibFreq * 1.1 + p.y * 20.0 + mid * 25.0) * (0.1 + audioSum * 0.3);
+              sand += vibration;
+
+              // Animated grain texture - particles moving with music
+              float grainTime = time * u_speed * 2.0 + audioSum * 5.0;
+              vec2 grainOffset = vec2(sin(grainTime + p.y * 5.0 + bass * 10.0), cos(grainTime + p.x * 5.0 + mid * 8.0)) * (0.02 + audioSum * 0.05);
+              float grain = hash((p + grainOffset) * (80.0 + high * 100.0)) * 0.2;
+              grain += hash((p - grainOffset) * (120.0 + bass * 80.0) + grainTime) * (0.1 + high * 0.3);
+              sand = clamp(sand + grain * sand * (1.0 + audioSum * 2.0), 0.0, 1.0);
+
+              // Animated plate color responds to bass
+              float shimmer = sin(time * u_speed * 3.0 + length(p) * 2.0 + bass * 10.0) * (0.02 + bass * 0.05);
+              vec3 plateColor = vec3(0.12 + shimmer + bass * 0.1, 0.14 + shimmer + mid * 0.08, 0.18 + shimmer + high * 0.12);
+
+              // Sand color responds to frequency content
+              vec3 sandColor = getColor(freqNorm * 2.0 + time * 0.1 + m * 0.05 + audioSum);
+              vec3 naturalSand = vec3(0.9 + mid * 0.1, 0.85 + bass * 0.15, 0.7 + high * 0.2) + vec3(grain * 0.2);
+              sandColor = mix(sandColor, naturalSand, 0.4 - audioSum * 0.2);
+
+              // Combine plate and sand with music-driven intensity
+              float pulseIntensity = u_intensity * (1.0 + sin(time * u_speed * 5.0 + bass * 20.0) * (0.1 + audioSum * 0.5));
+              col = mix(plateColor, sandColor, sand * pulseIntensity);
+
+              // Strong metallic reflection ripples with music
+              float ripple = sin(length(p) * (10.0 + mid * 20.0) - time * u_speed * 5.0 - bass * 15.0) * 0.5 + 0.5;
+              float reflection = pow(max(0.0, 1.0 - abs(pattern)), 4.0) * (0.4 + audioSum * 0.6) * ripple;
+              col += getColor(time * 0.2 + freqNorm * 3.0 + audioSum * 2.0) * reflection * (1.0 - sand) * u_bloom * (1.0 + high);
+
+              // Intense glowing nodal lines pulsing with music
+              float glowPulse = (1.0 + sin(time * u_speed * 8.0 + bass * 25.0) * 0.5) * (audioSum + bass * 2.0);
+              float glow = exp(-abs(pattern) * 2.0) * glowPulse * u_bloom * (1.0 + mid * 2.0);
+              col += getColor(freqNorm * 2.0 + time * 0.15 + audioSum * 3.0) * glow * (0.6 + audioSum);
+
+              // Particle sparkles react strongly to high frequencies
+              float sparkle = pow(hash(p * (200.0 + high * 200.0) + time * (3.0 + audioSum * 10.0)), 20.0 - high * 15.0) * sand * (audioSum + high) * 3.0;
+              col += getColor(time * 0.5 + freqNorm + high * 2.0) * sparkle;
+
+              // Edge vibration driven by bass
+              float edgeVib = sin(atan(uv.y, uv.x) * u_symmetry + time * u_speed * 2.0 + bass * 20.0) * (0.05 + bass * 0.15);
+              float border = smoothstep(1.8 + edgeVib, 1.4 + edgeVib, length(uv * 1.5));
+              col *= border;
+              col += vec3(0.02 + audioSum * 0.05) * (1.0 - border);
+
+              return col;
+            }
       
       void main() {
         vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution) / min(u_resolution.x, u_resolution.y);
