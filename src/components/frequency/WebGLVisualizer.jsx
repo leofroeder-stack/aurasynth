@@ -791,6 +791,302 @@ export default function WebGLVisualizer({
                                 return col;
                               }
 
+                              vec3 styleDataStream(vec2 uv, float time, float freqNorm, float audioSum) {
+                                vec3 col = vec3(0.0);
+
+                                // Extract frequency bands
+                                float bass = 0.0;
+                                float mid = 0.0;
+                                float high = 0.0;
+                                for (int i = 0; i < 32; i++) {
+                                  if (i < 10) bass += u_audioData[i];
+                                  else if (i < 20) mid += u_audioData[i];
+                                  else high += u_audioData[i];
+                                }
+                                bass /= 10.0;
+                                mid /= 10.0;
+                                high /= 12.0;
+
+                                // Multiple data streams flowing
+                                float numStreams = 12.0 + u_complexity * 8.0;
+                                for (float i = 0.0; i < 20.0; i++) {
+                                  if (i >= numStreams) break;
+
+                                  float streamX = (i / numStreams) * 2.0 - 1.0;
+                                  streamX *= 0.9;
+
+                                  // Get audio data for this stream
+                                  int binIndex = int(mod(i * 2.0, 32.0));
+                                  float streamIntensity = u_audioData[binIndex];
+
+                                  // Vertical flow with music-driven speed
+                                  float flowSpeed = u_speed * (2.0 + streamIntensity * 3.0 + bass * 2.0);
+                                  float y = mod(uv.y + time * flowSpeed + i * 0.5, 2.0) - 1.0;
+
+                                  // Data packets (rectangles) flowing down
+                                  float packetHeight = 0.1 + streamIntensity * 0.2;
+                                  float packetY = mod(y + sin(time * 5.0 + i) * 0.3, 2.0) - 1.0;
+
+                                  // Distance to stream
+                                  float distX = abs(uv.x - streamX);
+                                  float distY = abs(uv.y - packetY);
+
+                                  // Draw data packet
+                                  float packet = smoothstep(0.02, 0.0, distX) * smoothstep(packetHeight, 0.0, distY);
+                                  packet *= streamIntensity * (1.0 + audioSum * 2.0);
+
+                                  // Binary digits inside packets
+                                  float binary = step(0.5, fract(sin(i * 123.45 + floor(time * 10.0 + i)) * 43758.5453));
+                                  packet *= (0.5 + binary * 0.5);
+
+                                  // Stream glow trail
+                                  float trail = exp(-distX * (20.0 - streamIntensity * 15.0)) * (0.1 + streamIntensity * 0.3);
+                                  trail *= smoothstep(1.0, -1.0, uv.y - packetY);
+
+                                  // Color based on frequency band
+                                  vec3 streamColor = getColor(i * 0.1 + time * 0.1 + streamIntensity * 2.0);
+                                  if (i < 4.0) streamColor *= vec3(1.0, 0.5, 0.5) * (1.0 + bass);
+                                  else if (i < 8.0) streamColor *= vec3(0.5, 1.0, 0.5) * (1.0 + mid);
+                                  else streamColor *= vec3(0.5, 0.5, 1.0) * (1.0 + high);
+
+                                  col += streamColor * (packet + trail) * u_intensity;
+
+                                  // Connection lines between streams (data transfer)
+                                  if (i > 0.0 && streamIntensity > 0.3) {
+                                    float prevX = ((i - 1.0) / numStreams) * 2.0 - 1.0;
+                                    prevX *= 0.9;
+                                    vec2 lineDir = normalize(vec2(streamX - prevX, 0.3));
+                                    float lineDist = abs(dot(uv - vec2(prevX, packetY), vec2(-lineDir.y, lineDir.x)));
+                                    float connection = exp(-lineDist * 30.0) * streamIntensity * 0.3;
+                                    col += getColor(time * 0.2 + i * 0.15) * connection * u_bloom;
+                                  }
+                                }
+
+                                // Digital grid background
+                                vec2 grid = fract(uv * 20.0);
+                                float gridLine = step(0.95, max(grid.x, grid.y));
+                                col += vec3(0.02, 0.03, 0.04) * gridLine * (1.0 + audioSum * 0.5);
+
+                                // Overall energy pulse
+                                col += getColor(time * 0.15 + audioSum * 2.0) * audioSum * 0.3 * u_bloom;
+
+                                return col;
+                              }
+
+                              vec3 styleNeural(vec2 uv, float time, float freqNorm, float audioSum) {
+                                vec3 col = vec3(0.0);
+
+                                // Extract frequency bands
+                                float bass = 0.0;
+                                float mid = 0.0;
+                                float high = 0.0;
+                                for (int i = 0; i < 32; i++) {
+                                  if (i < 10) bass += u_audioData[i];
+                                  else if (i < 20) mid += u_audioData[i];
+                                  else high += u_audioData[i];
+                                }
+                                bass /= 10.0;
+                                mid /= 10.0;
+                                high /= 12.0;
+
+                                // Neural nodes (neurons)
+                                float numNodes = 20.0 + u_complexity * 15.0;
+                                vec2 nodes[30];
+                                float nodeActivity[30];
+
+                                for (float i = 0.0; i < 30.0; i++) {
+                                  if (i >= numNodes) break;
+
+                                  // Position nodes in organic pattern
+                                  float angle = i * 2.4 + time * u_speed * 0.3;
+                                  float radius = 0.3 + hash(vec2(i, 0.0)) * 0.5;
+                                  radius *= 1.0 + sin(time * u_speed + i) * 0.2 * audioSum;
+
+                                  nodes[int(i)] = vec2(
+                                    cos(angle) * radius,
+                                    sin(angle) * radius
+                                  );
+
+                                  // Node activity driven by audio
+                                  int binIndex = int(mod(i * 1.5, 32.0));
+                                  nodeActivity[int(i)] = u_audioData[binIndex];
+                                }
+
+                                // Draw connections (synapses)
+                                for (float i = 0.0; i < 30.0; i++) {
+                                  if (i >= numNodes) break;
+
+                                  for (float j = i + 1.0; j < 30.0; j++) {
+                                    if (j >= numNodes) break;
+
+                                    vec2 nodeA = nodes[int(i)];
+                                    vec2 nodeB = nodes[int(j)];
+                                    float dist = length(nodeA - nodeB);
+
+                                    // Only connect nearby nodes
+                                    if (dist < 0.6) {
+                                      // Line from A to B
+                                      vec2 lineDir = normalize(nodeB - nodeA);
+                                      vec2 toPoint = uv - nodeA;
+                                      float alongLine = clamp(dot(toPoint, lineDir) / dist, 0.0, 1.0);
+                                      vec2 closestPoint = nodeA + lineDir * alongLine * dist;
+                                      float lineDist = length(uv - closestPoint);
+
+                                      // Synapse strength based on node activity
+                                      float synapseStrength = (nodeActivity[int(i)] + nodeActivity[int(j)]) * 0.5;
+
+                                      // Signal pulse traveling along connection
+                                      float pulse = fract(time * u_speed * 2.0 + i * 0.3 + j * 0.2);
+                                      float pulseGlow = exp(-abs(alongLine - pulse) * 20.0) * synapseStrength;
+
+                                      float connection = exp(-lineDist * (50.0 + synapseStrength * 30.0)) * (0.1 + synapseStrength * 0.5);
+                                      connection += pulseGlow * 0.5;
+
+                                      vec3 connectionColor = getColor(i * 0.1 + j * 0.05 + time * 0.1);
+                                      col += connectionColor * connection * u_intensity;
+                                    }
+                                  }
+                                }
+
+                                // Draw nodes (neurons)
+                                for (float i = 0.0; i < 30.0; i++) {
+                                  if (i >= numNodes) break;
+
+                                  vec2 nodePos = nodes[int(i)];
+                                  float nodeDist = length(uv - nodePos);
+                                  float activity = nodeActivity[int(i)];
+
+                                  // Neuron body
+                                  float nodeSize = 0.02 + activity * 0.03;
+                                  float node = smoothstep(nodeSize, nodeSize * 0.5, nodeDist);
+
+                                  // Neuron glow (activation)
+                                  float glow = exp(-nodeDist * (15.0 - activity * 10.0)) * (0.3 + activity * 0.7);
+
+                                  // Firing animation
+                                  float firing = step(0.7, activity) * (sin(time * 20.0 + i * 5.0) * 0.5 + 0.5);
+
+                                  vec3 nodeColor = getColor(i * 0.15 + time * 0.1 + activity);
+                                  col += nodeColor * (node + glow + firing * 0.5) * u_intensity;
+                                }
+
+                                // Neural field background
+                                float field = fbm(uv * 3.0 + time * u_speed * 0.2, u_complexity);
+                                field *= audioSum * 0.3;
+                                col += getColor(field + time * 0.1) * field * u_bloom;
+
+                                // Energy pulses from center
+                                float centerPulse = sin(length(uv) * 10.0 - time * u_speed * 5.0) * 0.5 + 0.5;
+                                centerPulse *= audioSum * 0.2;
+                                col += getColor(time * 0.2) * centerPulse * u_bloom;
+
+                                return col;
+                              }
+
+                              vec3 styleQuantum(vec2 uv, float time, float freqNorm, float audioSum) {
+                                vec3 col = vec3(0.0);
+
+                                // Extract frequency bands
+                                float bass = 0.0;
+                                float mid = 0.0;
+                                float high = 0.0;
+                                for (int i = 0; i < 32; i++) {
+                                  if (i < 10) bass += u_audioData[i];
+                                  else if (i < 20) mid += u_audioData[i];
+                                  else high += u_audioData[i];
+                                }
+                                bass /= 10.0;
+                                mid /= 10.0;
+                                high /= 12.0;
+
+                                // Quantum uncertainty principle - position becomes probability cloud
+                                vec2 p = uv;
+
+                                // Multiple superposition states
+                                float numStates = 5.0 + u_complexity * 3.0;
+                                for (float i = 0.0; i < 8.0; i++) {
+                                  if (i >= numStates) break;
+
+                                  // Quantum state position with uncertainty
+                                  float statePhase = time * u_speed * (1.0 + i * 0.3) + i * TAU / numStates;
+                                  vec2 statePos = vec2(
+                                    cos(statePhase + bass * 5.0) * (0.3 + mid * 0.4),
+                                    sin(statePhase + mid * 4.0) * (0.3 + high * 0.4)
+                                  );
+
+                                  // Probability amplitude
+                                  int binIndex = int(mod(i * 4.0, 32.0));
+                                  float amplitude = u_audioData[binIndex];
+
+                                  // Wave function
+                                  float dist = length(uv - statePos);
+                                  float waveFunction = exp(-dist * (3.0 + amplitude * 5.0));
+
+                                  // Quantum interference pattern
+                                  float interference = sin(dist * (20.0 + amplitude * 30.0) - time * u_speed * 5.0 + i * 2.0);
+                                  interference *= waveFunction;
+
+                                  // Probability density
+                                  float probability = waveFunction * waveFunction * (1.0 + amplitude * 3.0);
+
+                                  vec3 stateColor = getColor(i * 0.2 + time * 0.1 + amplitude * 2.0);
+                                  col += stateColor * (probability + abs(interference) * 0.3) * u_intensity;
+                                }
+
+                                // Quantum entanglement (correlated pairs)
+                                for (float i = 0.0; i < 4.0; i++) {
+                                  float angle1 = time * u_speed + i * TAU * 0.25 + bass * 3.0;
+                                  float angle2 = -time * u_speed - i * TAU * 0.25 + mid * 3.0;
+
+                                  vec2 particle1 = vec2(cos(angle1), sin(angle1)) * (0.4 + high * 0.3);
+                                  vec2 particle2 = vec2(cos(angle2), sin(angle2)) * (0.4 + high * 0.3);
+
+                                  int binIndex = int(mod(i * 8.0, 32.0));
+                                  float entanglementStrength = u_audioData[binIndex];
+
+                                  // Entanglement connection
+                                  vec2 entangleDir = normalize(particle2 - particle1);
+                                  vec2 toPoint = uv - particle1;
+                                  float alongLine = clamp(dot(toPoint, entangleDir) / length(particle2 - particle1), 0.0, 1.0);
+                                  vec2 closestPoint = particle1 + entangleDir * alongLine * length(particle2 - particle1);
+                                  float lineDist = length(uv - closestPoint);
+
+                                  float entangle = exp(-lineDist * 30.0) * entanglementStrength * 0.5;
+
+                                  // Quantum spin visualization
+                                  float spin = sin(alongLine * 40.0 + time * 10.0) * 0.5 + 0.5;
+                                  entangle *= spin;
+
+                                  col += getColor(i * 0.25 + time * 0.15) * entangle * u_bloom;
+                                }
+
+                                // Quantum vacuum fluctuations
+                                float fluctuation = fbm(uv * 5.0 + time * u_speed, u_complexity);
+                                fluctuation = pow(fluctuation, 2.0);
+                                fluctuation *= audioSum;
+
+                                // Virtual particle pairs appearing and disappearing
+                                float virtualParticles = hash(floor(uv * 10.0 + time * 5.0));
+                                virtualParticles = step(0.95 - audioSum * 0.2, virtualParticles);
+
+                                col += getColor(time * 0.2 + fluctuation) * (fluctuation * 0.3 + virtualParticles * 0.5) * u_bloom;
+
+                                // Heisenberg uncertainty shimmer
+                                float uncertainty = sin(uv.x * 50.0 + time * 10.0) * sin(uv.y * 50.0 - time * 8.0);
+                                uncertainty *= high * 0.3;
+                                col += getColor(time * 0.3 + high * 2.0) * abs(uncertainty) * u_intensity;
+
+                                // Wave-particle duality effect
+                                float duality = mix(
+                                  sin(length(uv) * 20.0 - time * u_speed * 3.0), // wave
+                                  smoothstep(0.1, 0.0, length(uv - vec2(sin(time), cos(time)) * 0.3)), // particle
+                                  (sin(time * 2.0) + 1.0) * 0.5 * audioSum
+                                );
+                                col += getColor(time * 0.1) * abs(duality) * 0.2 * u_bloom;
+
+                                return col;
+                              }
+
                               vec3 styleElectrons(vec2 uv, float time, float freqNorm, float audioSum) {
                                 vec3 col = vec3(0.0);
                                 float f = freqNorm * 3.0;
@@ -1057,8 +1353,14 @@ export default function WebGLVisualizer({
                                                                   finalColor = styleElectric(uv, time, freqNorm, audioSum);
                                                                 } else if (u_visualStyle == 18) {
                                                                   finalColor = styleElectrons(uv, time, freqNorm, audioSum);
-                                                                } else {
+                                                                } else if (u_visualStyle == 19) {
                                                                   finalColor = styleSeismograph(uv, time, freqNorm, audioSum);
+                                                                } else if (u_visualStyle == 20) {
+                                                                  finalColor = styleDataStream(uv, time, freqNorm, audioSum);
+                                                                } else if (u_visualStyle == 21) {
+                                                                  finalColor = styleNeural(uv, time, freqNorm, audioSum);
+                                                                } else {
+                                                                  finalColor = styleQuantum(uv, time, freqNorm, audioSum);
                                                                 }
         
         vec3 glowColor = getColor(freqNorm + time * 0.1);
@@ -1201,7 +1503,7 @@ export default function WebGLVisualizer({
           const dragVelocityLocation = gl.getUniformLocation(program, 'u_dragVelocity');
 
           const waveTypes = { sine: 0, square: 1, sawtooth: 2, triangle: 3 };
-          const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12, aurora: 13, fireworks: 14, mandala: 15, liquid: 16, electric: 17, electrons: 18, seismograph: 19 };
+          const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12, aurora: 13, fireworks: 14, mandala: 15, liquid: 16, electric: 17, electrons: 18, seismograph: 19, datastream: 20, neural: 21, quantum: 22 };
                 const colorPalettes = { cyber: 0, fire: 1, nature: 2, ocean: 3, sunset: 4, neon: 5, aurora: 6, lava: 7, ice: 8, candy: 9, galaxy: 10 };
 
     const render = () => {
