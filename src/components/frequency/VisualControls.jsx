@@ -42,6 +42,7 @@ export default function VisualControls({
       { value: 'liquid', label: 'Liquid', icon: '💧' },
       { value: 'electric', label: 'Electric', icon: '⚡' },
       { value: 'electrons', label: 'Electrons', icon: '⚛' },
+      { value: 'seismograph', label: 'Seismograph', icon: '📈' },
       { value: 'ai-imagination', label: 'AI Mind', icon: '🧠' },
     ];
 
