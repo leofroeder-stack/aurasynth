@@ -4,50 +4,73 @@
  * API Documentation: https://archive.org/developers/md-read.html
  */
 
-export async function getLibrary() {
-  const itemId = 'mozart_202006';
-  const metadataUrl = `https://archive.org/metadata/${itemId}`;
-  
+export async function getLibraryFromIdentifier(identifier, useCache = true) {
   try {
-    const response = await fetch(metadataUrl);
+    // Check cache first if enabled
+    if (useCache) {
+      const { base44 } = await import('@/api/base44Client');
+      const cached = await base44.entities.ArchiveCache.filter({ identifier });
+      if (cached.length > 0 && cached[0].tracks) {
+        console.log('Using cached data for', identifier);
+        return cached[0].tracks;
+      }
+    }
+    
+    const response = await fetch(`https://archive.org/metadata/${identifier}`);
     if (!response.ok) {
-      throw new Error(`Failed to fetch metadata: ${response.status}`);
+      throw new Error(`Failed to fetch metadata: ${response.statusText}`);
     }
     
     const data = await response.json();
     
-    // Check if item exists
-    if (!data.files || data.files.length === 0) {
-      throw new Error('No files found in archive item');
-    }
-    
-    // Filter for MP3 files based on format field and file extension
     const mp3Files = data.files.filter(file => 
-      file.name && 
-      file.format && 
-      (file.format.includes('MP3') || file.name.toLowerCase().endsWith('.mp3'))
+      file.format === 'VBR MP3' || 
+      (file.name && file.name.toLowerCase().endsWith('.mp3'))
     );
     
-    if (mp3Files.length === 0) {
-      throw new Error('No MP3 files found in archive item');
+    const tracks = mp3Files.map(file => {
+      const title = file.title || 
+                   file.name.replace(/\.mp3$/i, '').replace(/_/g, ' ');
+      
+      return {
+        url: `https://archive.org/download/${identifier}/${encodeURIComponent(file.name)}`,
+        title: title,
+        artist: data.metadata?.creator?.[0] || data.metadata?.artist?.[0] || 'Unknown Artist',
+        album: data.metadata?.title || data.metadata?.album || 'Unknown Album',
+        duration: parseFloat(file.length) || 0,
+      };
+    });
+    
+    // Cache the results
+    if (useCache && tracks.length > 0) {
+      const { base44 } = await import('@/api/base44Client');
+      const existing = await base44.entities.ArchiveCache.filter({ identifier });
+      if (existing.length > 0) {
+        await base44.entities.ArchiveCache.update(existing[0].id, {
+          metadata: data.metadata,
+          tracks: tracks
+        });
+      } else {
+        await base44.entities.ArchiveCache.create({
+          identifier,
+          metadata: data.metadata,
+          tracks: tracks
+        });
+      }
     }
     
-    // Map to required format with metadata
-    const metadata = data.metadata || {};
-    const library = mp3Files.map(file => ({
-      title: file.title || file.name.replace(/\.mp3$/i, '').replace(/_/g, ' '),
-      file: file.name,
-      size: parseInt(file.size) || 0,
-      url: `https://archive.org/download/${itemId}/${encodeURIComponent(file.name)}`,
-      format: file.format,
-      duration: parseFloat(file.length) || 0,
-      artist: metadata.creator || metadata.artist || 'Wolfgang Amadeus Mozart',
-      album: metadata.title || 'Mozart Collection'
-    }));
-    
-    return library;
+    return tracks;
   } catch (error) {
-    console.error('Error fetching archive library:', error);
+    console.error('Error fetching Archive.org library:', error);
     throw error;
   }
+}
+
+export function extractIdentifierFromUrl(url) {
+  // Extract identifier from archive.org URLs
+  // Examples:
+  // https://archive.org/details/mozart_202006
+  // https://archive.org/details/identifier123
+  const match = url.match(/archive\.org\/details\/([^\/\?]+)/);
+  return match ? match[1] : null;
 }
