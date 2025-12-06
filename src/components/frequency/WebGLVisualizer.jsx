@@ -534,23 +534,54 @@ export default function WebGLVisualizer({
       vec3 styleAurora(vec2 uv, float time, float freqNorm, float audioSum) {
               vec3 col = vec3(0.0);
               float f = freqNorm * 3.0;
-              
+
+              // Extract frequency bands from audio
+              float bass = 0.0;
+              float mid = 0.0;
+              float high = 0.0;
+              for (int i = 0; i < 32; i++) {
+                if (i < 10) bass += u_audioData[i];
+                else if (i < 20) mid += u_audioData[i];
+                else high += u_audioData[i];
+              }
+              bass /= 10.0;
+              mid /= 10.0;
+              high /= 12.0;
+
               vec2 p = uv;
               p.y += 0.5;
-              
+
               for (float i = 0.0; i < 5.0; i++) {
-                float wave = sin(p.x * (3.0 + i) + time * u_speed * (0.5 + i * 0.2) + f * 5.0);
-                wave += sin(p.x * (5.0 + i * 2.0) - time * u_speed * 0.3) * 0.5;
-                wave *= 0.15 + f * 0.1;
-                
+                // Wave amplitude driven by different frequency bands
+                float bassWave = sin(p.x * (3.0 + i + bass * 5.0) + time * u_speed * (0.5 + i * 0.2 + bass * 2.0) + f * 5.0);
+                float midWave = sin(p.x * (5.0 + i * 2.0 + mid * 3.0) - time * u_speed * (0.3 + mid * 1.5)) * (0.5 + mid * 0.8);
+                float highWave = sin(p.x * (8.0 + i + high * 10.0) + time * u_speed * (1.0 + high * 3.0)) * (0.3 + high * 0.5);
+
+                float wave = bassWave + midWave + highWave;
+                wave *= (0.15 + f * 0.1 + audioSum * 0.3);
+
+                // Multiple aurora layers with varying intensities
                 float dist = abs(p.y - wave - i * 0.15);
-                float glow = 0.02 / dist;
-                glow *= 1.0 + audioSum;
-                
-                col += getColor(i * 0.2 + time * 0.1 + f) * glow * u_intensity * 0.5;
+                float glow = (0.02 + audioSum * 0.03) / dist;
+                glow *= (1.0 + audioSum * 2.0 + bass * 1.5);
+
+                // Color shifts based on frequency content
+                vec3 layerColor = getColor(i * 0.2 + time * 0.1 + f + bass * 0.5 + mid * 0.3);
+                layerColor.r += high * 0.3;
+                layerColor.g += mid * 0.4;
+                layerColor.b += bass * 0.3;
+
+                col += layerColor * glow * u_intensity * (0.5 + audioSum * 0.5);
               }
-              
-              col += getColor(f + time * 0.05) * exp(-length(uv) * 1.5) * u_bloom;
+
+              // Pulsing background glow with music
+              float bgGlow = exp(-length(uv) * (1.5 - bass * 0.5)) * u_bloom * (1.0 + audioSum + bass * 2.0);
+              col += getColor(f + time * 0.05 + audioSum) * bgGlow;
+
+              // Shimmer effect driven by high frequencies
+              float shimmer = sin(p.x * (20.0 + high * 30.0) + time * (5.0 + high * 10.0)) * high * 0.3;
+              col += getColor(time * 0.3 + high * 2.0) * shimmer * u_intensity;
+
               return col;
             }
             
