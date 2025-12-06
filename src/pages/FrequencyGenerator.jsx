@@ -349,10 +349,18 @@ export default function FrequencyGenerator() {
       meta.content = '#000000';
       document.head.appendChild(meta);
     }
+    // Resume audio context if suspended
+    if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume();
+    }
+    // Resume audio element if exists
+    if (audioElementRef.current && audioElementRef.current.paused && isPlaying) {
+      audioElementRef.current.play().catch(() => {});
+    }
     if (containerRef.current && document.fullscreenEnabled) {
       containerRef.current.requestFullscreen().catch(() => {});
     }
-  }, []);
+  }, [isPlaying]);
 
   const exitFullscreen = useCallback(() => {
     setIsFullscreen(false);
@@ -361,10 +369,18 @@ export default function FrequencyGenerator() {
     if (metaTheme) {
       metaTheme.setAttribute('content', '#0a0a0f');
     }
+    // Resume audio context if suspended
+    if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume();
+    }
+    // Resume audio element if exists
+    if (audioElementRef.current && audioElementRef.current.paused && isPlaying) {
+      audioElementRef.current.play().catch(() => {});
+    }
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
     }
-  }, []);
+  }, [isPlaying]);
 
   // Sync state when user exits fullscreen via Escape key
   useEffect(() => {
@@ -372,10 +388,17 @@ export default function FrequencyGenerator() {
       if (!document.fullscreenElement && isFullscreen) {
         setIsFullscreen(false);
       }
+      // Resume audio on fullscreen change
+      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+        audioContextRef.current.resume();
+      }
+      if (audioElementRef.current && audioElementRef.current.paused && isPlaying) {
+        audioElementRef.current.play().catch(() => {});
+      }
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, [isFullscreen]);
+  }, [isFullscreen, isPlaying]);
 
   // Setup Media Session for background playback
   useEffect(() => {
