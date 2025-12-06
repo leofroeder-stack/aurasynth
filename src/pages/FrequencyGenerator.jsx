@@ -296,39 +296,6 @@ export default function FrequencyGenerator() {
     setAudioFileName(file.name);
   }, [isPlaying, stopOscillator, stopAudioFile]);
 
-  const handlePlayArchiveTrack = useCallback(async (url, title) => {
-    if (isPlaying) {
-      stopOscillator();
-      stopAudioFile();
-      setIsPlaying(false);
-    }
-    
-    const ctx = initAudio();
-    
-    if (!audioElementRef.current) {
-      audioElementRef.current = new Audio();
-      audioElementRef.current.loop = true;
-      audioElementRef.current.setAttribute('playsinline', '');
-      audioElementRef.current.setAttribute('webkit-playsinline', '');
-    }
-    
-    audioElementRef.current.src = url;
-    
-    if (!audioSourceRef.current) {
-      audioSourceRef.current = ctx.createMediaElementSource(audioElementRef.current);
-      audioSourceRef.current.connect(analyserRef.current);
-    }
-    
-    await audioElementRef.current.play();
-    setIsPlaying(true);
-    setAudioFileName(title);
-    
-    // Auto fullscreen after 3 seconds
-    fullscreenTimerRef.current = setTimeout(() => {
-      enterFullscreen();
-    }, 3000);
-  }, [isPlaying, stopOscillator, stopAudioFile, initAudio, enterFullscreen]);
-
   // Update frequency in real-time
   useEffect(() => {
     if (oscillatorRef.current && audioContextRef.current) {
@@ -431,6 +398,39 @@ export default function FrequencyGenerator() {
       document.exitFullscreen().catch(() => {});
     }
   }, [isPlaying]);
+
+  const handlePlayArchiveTrack = useCallback(async (url, title) => {
+    if (isPlaying) {
+      stopOscillator();
+      stopAudioFile();
+      setIsPlaying(false);
+    }
+    
+    const ctx = initAudio();
+    
+    if (!audioElementRef.current) {
+      audioElementRef.current = new Audio();
+      audioElementRef.current.loop = true;
+      audioElementRef.current.setAttribute('playsinline', '');
+      audioElementRef.current.setAttribute('webkit-playsinline', '');
+    }
+    
+    audioElementRef.current.src = url;
+    
+    if (!audioSourceRef.current) {
+      audioSourceRef.current = ctx.createMediaElementSource(audioElementRef.current);
+      audioSourceRef.current.connect(analyserRef.current);
+    }
+    
+    await audioElementRef.current.play();
+    setIsPlaying(true);
+    setAudioFileName(title);
+    
+    // Auto fullscreen after 3 seconds
+    fullscreenTimerRef.current = setTimeout(() => {
+      enterFullscreen();
+    }, 3000);
+  }, [isPlaying, stopOscillator, stopAudioFile, initAudio, enterFullscreen]);
 
   // Sync state when user exits fullscreen via Escape key
   useEffect(() => {
