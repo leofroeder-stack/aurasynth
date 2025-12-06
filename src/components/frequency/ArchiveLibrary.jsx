@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Music, Plus, Play, Trash2, Library, Loader2, X } from "lucide-react";
+import { Music, Plus, Play, Trash2, Library, Loader2, X, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getLibrary } from '../../functions/archiveLibrary';
 
 export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
   const [open, setOpen] = useState(false);
