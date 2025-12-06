@@ -1,6 +1,7 @@
 /**
  * Archive.org Library Fetcher
  * Fetches and parses MP3 files from archive.org collections
+ * API Documentation: https://archive.org/developers/md-read.html
  */
 
 export async function getLibrary() {
@@ -15,17 +16,33 @@ export async function getLibrary() {
     
     const data = await response.json();
     
-    // Filter for MP3 files only
-    const mp3Files = (data.files || []).filter(file => 
-      file.name && file.name.toLowerCase().endsWith('.mp3')
+    // Check if item exists
+    if (!data.files || data.files.length === 0) {
+      throw new Error('No files found in archive item');
+    }
+    
+    // Filter for MP3 files based on format field and file extension
+    const mp3Files = data.files.filter(file => 
+      file.name && 
+      file.format && 
+      (file.format.includes('MP3') || file.name.toLowerCase().endsWith('.mp3'))
     );
     
-    // Map to required format
+    if (mp3Files.length === 0) {
+      throw new Error('No MP3 files found in archive item');
+    }
+    
+    // Map to required format with metadata
+    const metadata = data.metadata || {};
     const library = mp3Files.map(file => ({
       title: file.title || file.name.replace(/\.mp3$/i, '').replace(/_/g, ' '),
       file: file.name,
-      size: file.size || 0,
-      url: `https://archive.org/download/${itemId}/${file.name}`
+      size: parseInt(file.size) || 0,
+      url: `https://archive.org/download/${itemId}/${encodeURIComponent(file.name)}`,
+      format: file.format,
+      duration: parseFloat(file.length) || 0,
+      artist: metadata.creator || metadata.artist || 'Wolfgang Amadeus Mozart',
+      album: metadata.title || 'Mozart Collection'
     }));
     
     return library;
