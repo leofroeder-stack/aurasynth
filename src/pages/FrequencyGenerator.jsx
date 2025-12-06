@@ -11,8 +11,15 @@ import RecordingControls from '../components/frequency/RecordingControls';
 import BeatsControls from '../components/frequency/BeatsControls';
 import GestureController from '../components/frequency/GestureController';
 import MultiFrequencyLayers from '../components/frequency/MultiFrequencyLayers';
+import ArchiveLibrary from '../components/frequency/ArchiveLibrary';
+import { base44 } from '@/api/base44Client';
 
 export default function FrequencyGenerator() {
+  const [currentUser, setCurrentUser] = React.useState(null);
+  
+  React.useEffect(() => {
+    base44.auth.me().then(setCurrentUser).catch(() => {});
+  }, []);
   const [frequency, setFrequency] = useState(440);
   const [layers, setLayers] = useState([]); // Additional frequency layers
   const [minFreq, setMinFreq] = useState(20);
@@ -288,6 +295,39 @@ export default function FrequencyGenerator() {
     setAudioFile(file);
     setAudioFileName(file.name);
   }, [isPlaying, stopOscillator, stopAudioFile]);
+
+  const handlePlayArchiveTrack = useCallback(async (url, title) => {
+    if (isPlaying) {
+      stopOscillator();
+      stopAudioFile();
+      setIsPlaying(false);
+    }
+    
+    const ctx = initAudio();
+    
+    if (!audioElementRef.current) {
+      audioElementRef.current = new Audio();
+      audioElementRef.current.loop = true;
+      audioElementRef.current.setAttribute('playsinline', '');
+      audioElementRef.current.setAttribute('webkit-playsinline', '');
+    }
+    
+    audioElementRef.current.src = url;
+    
+    if (!audioSourceRef.current) {
+      audioSourceRef.current = ctx.createMediaElementSource(audioElementRef.current);
+      audioSourceRef.current.connect(analyserRef.current);
+    }
+    
+    await audioElementRef.current.play();
+    setIsPlaying(true);
+    setAudioFileName(title);
+    
+    // Auto fullscreen after 3 seconds
+    fullscreenTimerRef.current = setTimeout(() => {
+      enterFullscreen();
+    }, 3000);
+  }, [isPlaying, stopOscillator, stopAudioFile, initAudio, enterFullscreen]);
 
   // Update frequency in real-time
   useEffect(() => {
@@ -679,9 +719,13 @@ export default function FrequencyGenerator() {
                                                                         setLayers={setLayers}
                                                                         isPlaying={isPlaying}
                                                                       />
-                                                                    </>
-                                                                  }
-                  />
+                                                                      <ArchiveLibrary
+                                                                        onPlayTrack={handlePlayArchiveTrack}
+                                                                        currentUser={currentUser}
+                                                                      />
+                                                                      </>
+                                                                      }
+                                                                      />
                 </div>
               </div>
             </motion.main>
