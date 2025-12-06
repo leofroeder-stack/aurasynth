@@ -697,7 +697,106 @@ export default function WebGLVisualizer({
                                 return col;
                               }
 
-                              vec3 styleBinary(vec2 uv, float time, float freqNorm, float audioSum) {
+                              vec3 styleSeismograph(vec2 uv, float time, float freqNorm, float audioSum) {
+              vec3 col = vec3(0.0);
+              float f = freqNorm * 3.0;
+              
+              // Extract frequency bands
+              float bass = 0.0;
+              float mid = 0.0;
+              float high = 0.0;
+              for (int i = 0; i < 32; i++) {
+                if (i < 10) bass += u_audioData[i];
+                else if (i < 20) mid += u_audioData[i];
+                else high += u_audioData[i];
+              }
+              bass /= 10.0;
+              mid /= 10.0;
+              high /= 12.0;
+              
+              // Multiple seismograph traces
+              float numTraces = 3.0 + floor(u_complexity * 3.0);
+              
+              for (float trace = 0.0; trace < 8.0; trace++) {
+                if (trace >= numTraces) break;
+                
+                float yPos = (trace / numTraces) * 1.6 - 0.8;
+                vec2 traceUV = uv;
+                traceUV.y -= yPos;
+                
+                // Recording paper moves from right to left
+                float speed = u_speed * (1.5 + f);
+                float scrollX = mod(time * speed, 2.0);
+                traceUV.x += scrollX;
+                
+                // Base wave amplitude driven by different frequency bands
+                float waveAmp = 0.0;
+                if (trace < numTraces / 3.0) {
+                  waveAmp = bass * 0.3; // Low frequency traces
+                } else if (trace < numTraces * 2.0 / 3.0) {
+                  waveAmp = mid * 0.25; // Mid frequency traces
+                } else {
+                  waveAmp = high * 0.2; // High frequency traces
+                }
+                
+                // Main seismic wave pattern
+                float wave = 0.0;
+                wave += sin(traceUV.x * 20.0 * u_complexity + time * 3.0 + trace) * waveAmp;
+                wave += sin(traceUV.x * 40.0 * u_complexity - time * 5.0) * waveAmp * 0.5;
+                wave += sin(traceUV.x * 10.0 - time * 2.0 + f * 5.0) * waveAmp * 0.3;
+                
+                // Earthquake shake effect on strong bass
+                float quake = sin(traceUV.x * 5.0 + time * 10.0) * bass * bass * 0.4;
+                wave += quake;
+                
+                // Main frequency response
+                float freqWave = sin(traceUV.x * 30.0 + u_frequency * 0.01 - time * 4.0);
+                wave += freqWave * (0.05 + audioSum * 0.15) * u_intensity;
+                
+                // Draw the seismograph line
+                float lineThickness = 0.003 + audioSum * 0.002;
+                float line = smoothstep(lineThickness * 2.0, lineThickness, abs(traceUV.y - wave));
+                
+                // Color based on trace and intensity
+                vec3 traceColor = getColor(trace * 0.15 + f + time * 0.05);
+                
+                // Intensity glow
+                float glow = exp(-abs(traceUV.y - wave) * 30.0) * (0.3 + audioSum * 0.7) * u_bloom;
+                
+                col += traceColor * (line * u_intensity + glow * 0.5);
+                
+                // Grid lines (horizontal)
+                float gridLine = smoothstep(0.002, 0.001, abs(traceUV.y));
+                col += vec3(0.1, 0.15, 0.2) * gridLine * 0.3;
+              }
+              
+              // Vertical grid lines (time markers)
+              float vGrid = sin(uv.x * 40.0) * 0.5 + 0.5;
+              vGrid = smoothstep(0.98, 0.99, vGrid);
+              col += vec3(0.1, 0.15, 0.2) * vGrid * 0.2;
+              
+              // Recording needle/head at current position
+              float needleX = mod(time * u_speed * 1.5, 2.0) - 1.0;
+              float needle = smoothstep(0.015, 0.005, abs(uv.x - needleX));
+              needle *= smoothstep(0.9, 0.7, abs(uv.y));
+              col += getColor(time * 0.3 + f) * needle * (0.5 + audioSum);
+              
+              // Needle glow
+              float needleGlow = exp(-abs(uv.x - needleX) * 10.0) * smoothstep(0.9, 0.5, abs(uv.y));
+              col += getColor(time * 0.3 + f) * needleGlow * 0.3 * (1.0 + audioSum);
+              
+              // Paper texture
+              float paper = hash(uv * 300.0) * 0.03;
+              col += vec3(paper);
+              
+              // Vignette edges
+              float vignette = 1.0 - pow(length(uv) * 0.6, 2.0);
+              col *= vignette;
+              
+              return col;
+            }
+            
+            vec3 styleBinary(vec2 uv, float time, float freqNorm, float audioSum) {
               vec3 col = vec3(0.0);
               float f = freqNorm * 5.0;
               
@@ -1076,10 +1175,12 @@ export default function WebGLVisualizer({
                       } else if (u_visualStyle == 17) {
                                                                   finalColor = styleElectric(uv, time, freqNorm, audioSum);
                                                                 } else if (u_visualStyle == 18) {
-                                                                  finalColor = styleElectrons(uv, time, freqNorm, audioSum);
-                                                                } else {
-                                                                  finalColor = styleBinary(uv, time, freqNorm, audioSum);
-                                                                }
+                                                                                                            finalColor = styleElectrons(uv, time, freqNorm, audioSum);
+                                                                                                          } else if (u_visualStyle == 19) {
+                                                                                                            finalColor = styleBinary(uv, time, freqNorm, audioSum);
+                                                                                                          } else {
+                                                                                                            finalColor = styleSeismograph(uv, time, freqNorm, audioSum);
+                                                                                                          }
         
         vec3 glowColor = getColor(freqNorm + time * 0.1);
         float glow = exp(-length(uv0) * (2.0 - freqNorm)) * u_bloom;
@@ -1205,7 +1306,7 @@ export default function WebGLVisualizer({
           const dragVelocityLocation = gl.getUniformLocation(program, 'u_dragVelocity');
 
           const waveTypes = { sine: 0, square: 1, sawtooth: 2, triangle: 3 };
-    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12, aurora: 13, fireworks: 14, mandala: 15, liquid: 16, electric: 17, electrons: 18, binary: 19 };
+    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12, aurora: 13, fireworks: 14, mandala: 15, liquid: 16, electric: 17, electrons: 18, binary: 19, seismograph: 20 };
           const colorPalettes = { cyber: 0, fire: 1, nature: 2, ocean: 3, sunset: 4, neon: 5, aurora: 6, lava: 7, ice: 8, candy: 9, galaxy: 10 };
 
     const render = () => {
