@@ -56,7 +56,7 @@ export default function BackgroundAudioMixer({
       // Toggle existing
       const audio = audioElementsRef.current[existingIndex].element;
       if (audio.paused) {
-        audio.play();
+        audio.play().catch(() => {});
         setAudioFiles(prev => prev.map(f => 
           f.id === fileData.id ? { ...f, isPlaying: true } : f
         ));
@@ -76,6 +76,11 @@ export default function BackgroundAudioMixer({
     audio.setAttribute('playsinline', '');
     audio.setAttribute('webkit-playsinline', '');
 
+    // Resume audio context if suspended
+    if (audioContext.state === 'suspended') {
+      audioContext.resume();
+    }
+
     const source = audioContext.createMediaElementSource(audio);
     const gainNode = audioContext.createGain();
     gainNode.gain.setValueAtTime(fileData.volume, audioContext.currentTime);
@@ -87,7 +92,7 @@ export default function BackgroundAudioMixer({
     audioSourcesRef.current.push({ fileId: fileData.id, source, gainNode });
     gainNodesRef.current.push({ fileId: fileData.id, gainNode });
 
-    audio.play();
+    audio.play().catch(() => {});
     setAudioFiles(prev => prev.map(f => 
       f.id === fileData.id ? { ...f, isPlaying: true } : f
     ));

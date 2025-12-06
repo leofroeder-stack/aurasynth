@@ -349,18 +349,27 @@ export default function FrequencyGenerator() {
       meta.content = '#000000';
       document.head.appendChild(meta);
     }
-    // Resume audio context if suspended
-    if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-      audioContextRef.current.resume();
-    }
-    // Resume audio element if exists
-    if (audioElementRef.current && audioElementRef.current.paused && isPlaying) {
-      audioElementRef.current.play().catch(() => {});
-    }
+    
+    // Ensure audio continues playing in fullscreen
+    setTimeout(() => {
+      // Resume audio context if suspended
+      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+        audioContextRef.current.resume();
+      }
+      // Resume main audio element if exists
+      if (audioElementRef.current && audioElementRef.current.paused && isPlaying) {
+        audioElementRef.current.play().catch(() => {});
+      }
+      // Resume all layer oscillators by restarting if playing
+      if (isPlaying && !audioFile && oscillatorRef.current) {
+        // Oscillators should continue playing automatically
+      }
+    }, 100);
+    
     if (containerRef.current && document.fullscreenEnabled) {
       containerRef.current.requestFullscreen().catch(() => {});
     }
-  }, [isPlaying]);
+  }, [isPlaying, audioFile]);
 
   const exitFullscreen = useCallback(() => {
     setIsFullscreen(false);
