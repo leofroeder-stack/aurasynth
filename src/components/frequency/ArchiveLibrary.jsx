@@ -175,15 +175,34 @@ export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
         <div className="space-y-4">
           {/* Add Track Section (Admin Only) */}
           {isAdmin && (
-            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+            <div className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-2">
               {!addMode ? (
-                <Button
-                  onClick={() => setAddMode(true)}
-                  className="w-full bg-purple-600 hover:bg-purple-700 gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Archive.org Link
-                </Button>
+                <>
+                  <Button
+                    onClick={() => setAddMode(true)}
+                    className="w-full bg-purple-600 hover:bg-purple-700 gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Archive.org Link
+                  </Button>
+                  <Button
+                    onClick={handleLoadMozartLibrary}
+                    disabled={isScanning}
+                    className="w-full bg-cyan-600 hover:bg-cyan-700 gap-2"
+                  >
+                    {isScanning ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4" />
+                        Load Mozart Library
+                      </>
+                    )}
+                  </Button>
+                </>
               ) : (
                 <div className="space-y-3">
                   <Input
