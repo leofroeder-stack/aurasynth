@@ -42,12 +42,8 @@ export default function VisualControls({
       { value: 'liquid', label: 'Liquid', icon: '💧' },
       { value: 'electric', label: 'Electric', icon: '⚡' },
       { value: 'electrons', label: 'Electrons', icon: '⚛' },
-      { value: 'seismograph', label: 'Seismograph', icon: '📈' },
-      { value: 'datastream', label: 'Data Stream', icon: '📊' },
-      { value: 'neural', label: 'Neural Net', icon: '🕸' },
-      { value: 'quantum', label: 'Quantum Flux', icon: '🌀' },
       { value: 'ai-imagination', label: 'AI Mind', icon: '🧠' },
-      ];
+    ];
 
   const colorPalettes = [
                 { value: 'cyber', label: 'Cyber', colors: ['#00f0ff', '#ff00aa', '#7b00ff'] },
