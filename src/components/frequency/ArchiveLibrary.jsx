@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Music, Plus, Play, Trash2, Library, Loader2, X, Download } from "lucide-react";
+import { Music, Plus, Play, Trash2, Library, Loader2, X, Download, Link as LinkIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getLibrary } from './archiveLibraryUtils';
+import { getLibraryFromIdentifier, extractIdentifierFromUrl } from './archiveLibraryUtils';
 
 export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
   const [open, setOpen] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [customUrl, setCustomUrl] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: tracks = [], isLoading } = useQuery({
@@ -19,6 +21,19 @@ export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
     queryFn: () => base44.entities.ArchiveTrack.list('-created_date'),
     enabled: open,
   });
+
+  // Group tracks by artist
+  const tracksByArtist = useMemo(() => {
+    const grouped = {};
+    tracks.forEach(track => {
+      const artist = track.artist || 'Unknown Artist';
+      if (!grouped[artist]) {
+        grouped[artist] = [];
+      }
+      grouped[artist].push(track);
+    });
+    return grouped;
+  }, [tracks]);
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.ArchiveTrack.delete(id),
@@ -34,10 +49,15 @@ export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
     },
   });
 
-  const handleLoadMozartLibrary = async () => {
+  const handleLoadFromUrl = async (url, tags = []) => {
     setIsScanning(true);
     try {
-      const library = await getLibrary();
+      const identifier = extractIdentifierFromUrl(url);
+      if (!identifier) {
+        throw new Error('Invalid Archive.org URL. Please use format: https://archive.org/details/identifier');
+      }
+
+      const library = await getLibraryFromIdentifier(identifier, true);
       
       for (const track of library) {
         await createMutation.mutateAsync({
@@ -46,16 +66,22 @@ export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
           artist: track.artist,
           album: track.album,
           duration: track.duration,
-          tags: ['classical', 'mozart']
+          tags: tags
         });
       }
       
-      alert(`Successfully added ${library.length} Mozart tracks to library`);
+      alert(`Successfully added ${library.length} tracks to library`);
+      setCustomUrl('');
+      setShowCustomInput(false);
     } catch (error) {
-      console.error('Error loading Mozart library:', error);
-      alert(`Failed to load Mozart library: ${error.message}`);
+      console.error('Error loading library:', error);
+      alert(`Failed to load library: ${error.message}`);
     }
     setIsScanning(false);
+  };
+
+  const handleLoadMozartLibrary = () => {
+    handleLoadFromUrl('https://archive.org/details/mozart_202006', ['classical', 'mozart']);
   };
 
   const handlePlay = async (track) => {
@@ -100,27 +126,72 @@ export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
         <div className="space-y-4">
           {/* Admin Controls */}
           {isAdmin && (
-            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-              <Button
-                onClick={handleLoadMozartLibrary}
-                disabled={isScanning}
-                className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 gap-2"
-              >
-                {isScanning ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Loading Mozart Collection...
-                  </>
+            <div className="space-y-3">
+              {/* Quick Load Mozart */}
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <Button
+                  onClick={handleLoadMozartLibrary}
+                  disabled={isScanning}
+                  className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 gap-2"
+                >
+                  {isScanning ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Loading Collection...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      Load Mozart Library
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Custom URL Input */}
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                {!showCustomInput ? (
+                  <Button
+                    onClick={() => setShowCustomInput(true)}
+                    variant="outline"
+                    className="w-full border-white/20 text-gray-300 hover:bg-white/10 gap-2"
+                  >
+                    <LinkIcon className="w-4 h-4" />
+                    Add Custom Archive.org Link
+                  </Button>
                 ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    Load Mozart Library from Archive.org
-                  </>
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="https://archive.org/details/identifier"
+                        value={customUrl}
+                        onChange={(e) => setCustomUrl(e.target.value)}
+                        className="bg-white/5 border-white/10 text-white flex-1"
+                        disabled={isScanning}
+                      />
+                      <Button
+                        onClick={() => setShowCustomInput(false)}
+                        variant="ghost"
+                        size="icon"
+                        className="text-gray-400 hover:text-white"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <Button
+                      onClick={() => handleLoadFromUrl(customUrl)}
+                      disabled={isScanning || !customUrl}
+                      className="w-full bg-cyan-600 hover:bg-cyan-700 gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Load Library
+                    </Button>
+                    <p className="text-xs text-gray-500 text-center">
+                      Paste any Archive.org collection URL
+                    </p>
+                  </div>
                 )}
-              </Button>
-              <p className="text-xs text-gray-500 mt-2 text-center">
-                Loads all Mozart tracks from archive.org/details/mozart_202006
-              </p>
+              </div>
             </div>
           )}
 
@@ -140,7 +211,7 @@ export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
             </div>
           )}
 
-          {/* Tracks List */}
+          {/* Tracks List - Organized by Artist */}
           <ScrollArea className="h-[450px] pr-4">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
@@ -150,59 +221,70 @@ export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
               <div className="text-center py-12 text-gray-500">
                 <Music className="w-16 h-16 mx-auto mb-4 opacity-20" />
                 <p className="text-sm">No tracks in library</p>
-                {isAdmin && <p className="text-xs mt-2">Load Mozart library to get started</p>}
+                {isAdmin && <p className="text-xs mt-2">Load a collection to get started</p>}
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <AnimatePresence>
-                  {tracks.map((track) => (
+                  {Object.entries(tracksByArtist).map(([artist, artistTracks]) => (
                     <motion.div
-                      key={track.id}
+                      key={artist}
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -100 }}
-                      className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-purple-500/30 transition-all group"
                     >
-                      <div className="flex items-start gap-3">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handlePlay(track)}
-                          className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 shrink-0 mt-0.5"
-                        >
-                          <Play className="w-5 h-5" />
-                        </Button>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm mb-1 leading-tight">{track.title}</div>
-                          <div className="text-xs text-gray-500 space-y-0.5">
-                            <div>{track.artist}</div>
-                            {track.album && <div>{track.album}</div>}
-                            {track.duration > 0 && (
-                              <div>{Math.floor(track.duration / 60)}:{Math.floor(track.duration % 60).toString().padStart(2, '0')}</div>
-                            )}
-                          </div>
-                          {track.tags?.length > 0 && (
-                            <div className="flex gap-1 mt-2 flex-wrap">
-                              {track.tags.map((tag, i) => (
-                                <span key={i} className="text-xs bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded">
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        {isAdmin && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteMutation.mutate(track.id)}
-                            className="text-gray-500 hover:text-red-400 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5"
+                      <div className="mb-2 flex items-center justify-between">
+                        <h3 className="text-sm font-medium text-gray-300">{artist}</h3>
+                        <span className="text-xs text-gray-500">{artistTracks.length} track{artistTracks.length !== 1 ? 's' : ''}</span>
+                      </div>
+                      <div className="space-y-2">
+                        {artistTracks.map((track) => (
+                          <motion.div
+                            key={track.id}
+                            className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-purple-500/30 transition-all group"
                           >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
+                            <div className="flex items-start gap-3">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handlePlay(track)}
+                                className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 shrink-0 mt-0.5"
+                              >
+                                <Play className="w-5 h-5" />
+                              </Button>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-sm mb-1 leading-tight">{track.title}</div>
+                                <div className="text-xs text-gray-500 space-y-0.5">
+                                  {track.album && <div>{track.album}</div>}
+                                  {track.duration > 0 && (
+                                    <div>{Math.floor(track.duration / 60)}:{Math.floor(track.duration % 60).toString().padStart(2, '0')}</div>
+                                  )}
+                                </div>
+                                {track.tags?.length > 0 && (
+                                  <div className="flex gap-1 mt-2 flex-wrap">
+                                    {track.tags.map((tag, i) => (
+                                      <span key={i} className="text-xs bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded">
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
+                              {isAdmin && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => deleteMutation.mutate(track.id)}
+                                  className="text-gray-500 hover:text-red-400 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </motion.div>
+                        ))}
                       </div>
                     </motion.div>
                   ))}
