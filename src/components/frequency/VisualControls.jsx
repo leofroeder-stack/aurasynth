@@ -42,12 +42,6 @@ export default function VisualControls({
         { value: 'liquid', label: 'Liquid', icon: '💧' },
         { value: 'electric', label: 'Electric', icon: '⚡' },
                       { value: 'electrons', label: 'Electrons', icon: '⚛' },
-                      { value: 'dna', label: 'DNA', icon: '🧬' },
-                      { value: 'vortex', label: 'Vortex', icon: '🌪️' },
-                      { value: 'constellation', label: 'Constellation', icon: '✨' },
-                      { value: 'crystal', label: 'Crystal', icon: '💎' },
-                      { value: 'bubbles', label: 'Bubbles', icon: '🫧' },
-                      { value: 'web', label: 'Web', icon: '🕸️' },
                     ];
 
   const colorPalettes = [
