@@ -58,9 +58,14 @@ export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
     setIsScanning(false);
   };
 
-  const handlePlay = (track) => {
+  const handlePlay = async (track) => {
     if (onPlayTrack) {
-      onPlayTrack(track.url, track.title);
+      try {
+        await onPlayTrack(track.url, track.title);
+      } catch (error) {
+        console.error('Failed to play track:', error);
+        alert(`Failed to play: ${track.title}`);
+      }
     }
     setOpen(false);
   };

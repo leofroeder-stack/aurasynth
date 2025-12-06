@@ -408,28 +408,43 @@ export default function FrequencyGenerator() {
     
     const ctx = initAudio();
     
-    if (!audioElementRef.current) {
-      audioElementRef.current = new Audio();
-      audioElementRef.current.loop = true;
-      audioElementRef.current.setAttribute('playsinline', '');
-      audioElementRef.current.setAttribute('webkit-playsinline', '');
+    // Create new audio element for archive track
+    if (audioElementRef.current) {
+      audioElementRef.current.pause();
+      audioElementRef.current.src = '';
     }
     
+    // Disconnect old source if exists
+    if (audioSourceRef.current) {
+      try {
+        audioSourceRef.current.disconnect();
+      } catch (e) {}
+      audioSourceRef.current = null;
+    }
+    
+    audioElementRef.current = new Audio();
+    audioElementRef.current.crossOrigin = 'anonymous';
+    audioElementRef.current.loop = true;
+    audioElementRef.current.setAttribute('playsinline', '');
+    audioElementRef.current.setAttribute('webkit-playsinline', '');
     audioElementRef.current.src = url;
     
-    if (!audioSourceRef.current) {
-      audioSourceRef.current = ctx.createMediaElementSource(audioElementRef.current);
-      audioSourceRef.current.connect(analyserRef.current);
+    audioSourceRef.current = ctx.createMediaElementSource(audioElementRef.current);
+    audioSourceRef.current.connect(analyserRef.current);
+    
+    try {
+      await audioElementRef.current.play();
+      setIsPlaying(true);
+      setAudioFileName(title);
+      
+      // Auto fullscreen after 3 seconds
+      fullscreenTimerRef.current = setTimeout(() => {
+        enterFullscreen();
+      }, 3000);
+    } catch (error) {
+      console.error('Failed to play archive track:', error);
+      throw new Error(`Playback failed: ${error.message}`);
     }
-    
-    await audioElementRef.current.play();
-    setIsPlaying(true);
-    setAudioFileName(title);
-    
-    // Auto fullscreen after 3 seconds
-    fullscreenTimerRef.current = setTimeout(() => {
-      enterFullscreen();
-    }, 3000);
   }, [isPlaying, stopOscillator, stopAudioFile, initAudio, enterFullscreen]);
 
   // Sync state when user exits fullscreen via Escape key
