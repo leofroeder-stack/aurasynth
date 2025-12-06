@@ -7,7 +7,7 @@ import { Music, Plus, Play, Trash2, Library, Loader2, X, Download } from "lucide
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getLibrary } from '../../functions/archiveLibrary';
+import { getLibrary } from './archiveLibraryUtils';
 
 export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
   const [open, setOpen] = useState(false);
