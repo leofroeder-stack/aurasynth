@@ -8,6 +8,7 @@ import { Play, Pause, Volume2, Waves, Edit3, X, Settings2, Upload, Maximize2 } f
 import { motion } from "framer-motion";
 import TherapyFrequencyPicker from './TherapyFrequencyPicker';
 import AmbientAnalyzer from './AmbientAnalyzer';
+import AudioInputControls from './AudioInputControls';
 
 export default function AudioControls({ 
   frequency, 
@@ -72,12 +73,13 @@ export default function AudioControls({
       {/* Top bar with Therapy on left, controls on right */}
       <div className="flex items-center justify-between -mt-2 flex-wrap gap-2">
         <div className="flex items-center gap-2">
-            <TherapyFrequencyPicker onSelectFrequency={setFrequency} />
-            <AmbientAnalyzer 
-              onApplyFrequency={setFrequency} 
-              onApplyVisualStyle={onApplyVisualStyle || (() => {})} 
-            />
-          </div>
+                          <TherapyFrequencyPicker onSelectFrequency={setFrequency} />
+                          <AmbientAnalyzer 
+                            onApplyFrequency={setFrequency} 
+                            onApplyVisualStyle={onApplyVisualStyle || (() => {})} 
+                          />
+                          <AudioInputControls />
+                        </div>
 
         <div className="flex items-center gap-2 md:gap-3 flex-wrap">
           {onOpenVisuals && (
