@@ -4,6 +4,43 @@
  * API Documentation: https://archive.org/developers/md-read.html
  */
 
+import axios from 'axios';
+
+export async function getLibrary(input) {
+  try {
+    // Extract identifier from URL or use as-is
+    let identifier = input;
+    if (input.includes('archive.org')) {
+      const match = input.match(/archive\.org\/details\/([^\/\?]+)/);
+      if (match) {
+        identifier = match[1];
+      }
+    }
+    
+    const metadataUrl = `https://archive.org/metadata/${identifier}`;
+    const response = await axios.get(metadataUrl);
+    const data = response.data;
+    
+    // Filter for MP3 files
+    const mp3Files = data.files.filter(file => 
+      file.name && file.name.toLowerCase().endsWith('.mp3')
+    );
+    
+    // Map to required format
+    const library = mp3Files.map(file => ({
+      title: file.title || file.name.replace(/\.mp3$/i, '').replace(/_/g, ' '),
+      file: file.name,
+      size: parseInt(file.size) || 0,
+      url: `https://archive.org/download/${identifier}/${encodeURIComponent(file.name)}`
+    }));
+    
+    return library;
+  } catch (error) {
+    console.error('Error fetching Archive.org library:', error);
+    throw error;
+  }
+}
+
 export async function getLibraryFromIdentifier(identifier, useCache = true) {
   try {
     // Check cache first if enabled
@@ -16,12 +53,8 @@ export async function getLibraryFromIdentifier(identifier, useCache = true) {
       }
     }
     
-    const response = await fetch(`https://archive.org/metadata/${identifier}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch metadata: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
+    const response = await axios.get(`https://archive.org/metadata/${identifier}`);
+    const data = response.data;
     
     const mp3Files = data.files.filter(file => 
       file.format === 'VBR MP3' || 
