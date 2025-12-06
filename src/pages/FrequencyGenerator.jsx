@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Settings2, X, Maximize2, Minimize2 } from "lucide-react";
 import FrequencyOverlay from '../components/frequency/FrequencyOverlay';
 import WebGLVisualizer from '../components/frequency/WebGLVisualizer';
+import AIImaginationView from '../components/frequency/AIImaginationView';
 import AudioControls from '../components/frequency/AudioControls';
 import VisualControls from '../components/frequency/VisualControls';
 import RecordingControls from '../components/frequency/RecordingControls';
@@ -548,27 +549,39 @@ export default function FrequencyGenerator() {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
-        <WebGLVisualizer
-                        frequency={frequency}
-                        isPlaying={isPlaying}
-                        waveType={waveType}
-                        analyserNode={analyserNode}
-                        visualStyle={visualStyle}
-                        colorPalette={colorPalette}
-                        speed={speed}
-                        intensity={intensity}
-                        complexity={complexity}
-                        symmetry={symmetry}
-                        bloom={bloom}
-                        canvasRef={canvasRef}
-                        binauralEnabled={binauralEnabled}
-                        binauralFreq={binauralFreq}
-                        isochronicEnabled={isochronicEnabled}
-                        isochronicFreq={isochronicFreq}
-                        isochronicDepth={isochronicDepth}
-                        touchPoints={touchPoints}
-                        dragVelocity={dragVelocity}
-                      />
+        {visualStyle === 'ai-imagination' ? (
+          <AIImaginationView
+            frequency={frequency}
+            isPlaying={isPlaying}
+            analyserNode={analyserNode}
+            speed={speed}
+            intensity={intensity}
+            complexity={complexity}
+            canvasRef={canvasRef}
+          />
+        ) : (
+          <WebGLVisualizer
+            frequency={frequency}
+            isPlaying={isPlaying}
+            waveType={waveType}
+            analyserNode={analyserNode}
+            visualStyle={visualStyle}
+            colorPalette={colorPalette}
+            speed={speed}
+            intensity={intensity}
+            complexity={complexity}
+            symmetry={symmetry}
+            bloom={bloom}
+            canvasRef={canvasRef}
+            binauralEnabled={binauralEnabled}
+            binauralFreq={binauralFreq}
+            isochronicEnabled={isochronicEnabled}
+            isochronicFreq={isochronicFreq}
+            isochronicDepth={isochronicDepth}
+            touchPoints={touchPoints}
+            dragVelocity={dragVelocity}
+          />
+        )}
       </div>
 
       {/* Overlay gradient for readability */}
