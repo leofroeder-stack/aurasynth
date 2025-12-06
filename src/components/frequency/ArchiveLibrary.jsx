@@ -11,8 +11,6 @@ import { getLibrary } from '../../functions/archiveLibrary';
 
 export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
   const [open, setOpen] = useState(false);
-  const [addMode, setAddMode] = useState(false);
-  const [newUrl, setNewUrl] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const queryClient = useQueryClient();
 
@@ -33,76 +31,8 @@ export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
     mutationFn: (track) => base44.entities.ArchiveTrack.create(track),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['archive-tracks'] });
-      setAddMode(false);
-      setNewUrl('');
     },
   });
-
-  const scanArchiveUrl = async (url) => {
-    setIsScanning(true);
-    try {
-      // Extract item identifier from archive.org URL (supports both /details/ and /download/)
-      const itemMatch = url.match(/archive\.org\/(?:details|download)\/([^\/]+)/);
-      if (!itemMatch) {
-        alert('Invalid archive.org URL. Use format: https://archive.org/details/item-id or https://archive.org/download/item-id');
-        setIsScanning(false);
-        return;
-      }
-
-      const itemId = itemMatch[1];
-      
-      // Fetch metadata from archive.org
-      const metadataUrl = `https://archive.org/metadata/${itemId}`;
-      const response = await fetch(metadataUrl);
-      const data = await response.json();
-
-      // Find audio files
-      const audioFiles = data.files?.filter(file => 
-        file.format === 'VBR MP3' || 
-        file.format === 'Ogg Vorbis' ||
-        file.format === '128Kbps MP3' ||
-        file.name?.match(/\.(mp3|ogg|m4a)$/i)
-      ) || [];
-
-      if (audioFiles.length === 0) {
-        alert('No audio files found in this archive');
-        setIsScanning(false);
-        return;
-      }
-
-      // Create tracks for each audio file
-      const metadata = data.metadata || {};
-      const baseTitle = metadata.title || itemId;
-      const artist = metadata.creator || metadata.artist || 'Unknown Artist';
-      const album = metadata.album || '';
-
-      for (const file of audioFiles) {
-        const trackUrl = `https://archive.org/download/${itemId}/${file.name}`;
-        const title = file.title || file.name.replace(/\.[^/.]+$/, "");
-        const duration = parseFloat(file.length) || 0;
-
-        await createMutation.mutateAsync({
-          url: trackUrl,
-          title: audioFiles.length === 1 ? baseTitle : title,
-          artist,
-          album,
-          duration,
-          tags: metadata.subject || []
-        });
-      }
-
-      alert(`Added ${audioFiles.length} track(s) from archive`);
-    } catch (error) {
-      console.error('Error scanning archive:', error);
-      alert('Failed to scan archive. Make sure the URL is valid.');
-    }
-    setIsScanning(false);
-  };
-
-  const handleAddTrack = async () => {
-    if (!newUrl.trim()) return;
-    await scanArchiveUrl(newUrl);
-  };
 
   const handleLoadMozartLibrary = async () => {
     setIsScanning(true);
@@ -173,79 +103,29 @@ export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Add Track Section (Admin Only) */}
+          {/* Load Mozart Library (Admin Only) */}
           {isAdmin && (
-            <div className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-2">
-              {!addMode ? (
-                <>
-                  <Button
-                    onClick={() => setAddMode(true)}
-                    className="w-full bg-purple-600 hover:bg-purple-700 gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Archive.org Link
-                  </Button>
-                  <Button
-                    onClick={handleLoadMozartLibrary}
-                    disabled={isScanning}
-                    className="w-full bg-cyan-600 hover:bg-cyan-700 gap-2"
-                  >
-                    {isScanning ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Loading...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="w-4 h-4" />
-                        Load Mozart Library
-                      </>
-                    )}
-                  </Button>
-                </>
-              ) : (
-                <div className="space-y-3">
-                  <Input
-                    placeholder="https://archive.org/details/..."
-                    value={newUrl}
-                    onChange={(e) => setNewUrl(e.target.value)}
-                    className="bg-white/5 border-white/10 text-white"
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddTrack()}
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={handleAddTrack}
-                      disabled={isScanning}
-                      className="flex-1 bg-purple-600 hover:bg-purple-700 gap-2"
-                    >
-                      {isScanning ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Scanning...
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="w-4 h-4" />
-                          Add & Scan
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setAddMode(false);
-                        setNewUrl('');
-                      }}
-                      className="border-white/10 text-gray-300"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Paste an archive.org details URL. The app will scan and add all audio files.
-                  </p>
-                </div>
-              )}
+            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+              <Button
+                onClick={handleLoadMozartLibrary}
+                disabled={isScanning}
+                className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 gap-2"
+              >
+                {isScanning ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading Mozart Collection...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Load Mozart Library from Archive.org
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Loads all Mozart tracks from archive.org/details/mozart_202006
+              </p>
             </div>
           )}
 
