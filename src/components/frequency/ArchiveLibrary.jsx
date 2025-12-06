@@ -89,26 +89,16 @@ export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-gray-900 border-white/10 text-white max-w-2xl max-h-[80vh]">
+      <DialogContent className="bg-gray-900 border-white/10 text-white max-w-3xl max-h-[85vh]">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Library className="w-5 h-5 text-purple-400" />
-              Archive.org Music Library
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setOpen(false)}
-              className="text-gray-400 hover:text-white"
-            >
-              <X className="w-5 h-5" />
-            </Button>
+          <DialogTitle className="flex items-center gap-2">
+            <Library className="w-5 h-5 text-purple-400" />
+            Archive.org Music Library
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Load Mozart Library (Admin Only) */}
+          {/* Admin Controls */}
           {isAdmin && (
             <div className="bg-white/5 rounded-xl p-4 border border-white/10">
               <Button
@@ -134,8 +124,24 @@ export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
             </div>
           )}
 
+          {/* Play All Button */}
+          {tracks.length > 0 && (
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-gray-400">
+                {tracks.length} track{tracks.length !== 1 ? 's' : ''} in library
+              </p>
+              <Button
+                onClick={() => handlePlay(tracks[0])}
+                className="bg-purple-600 hover:bg-purple-700 gap-2"
+              >
+                <Play className="w-4 h-4" />
+                Play All
+              </Button>
+            </div>
+          )}
+
           {/* Tracks List */}
-          <ScrollArea className="h-[400px] pr-4">
+          <ScrollArea className="h-[450px] pr-4">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
@@ -144,7 +150,7 @@ export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
               <div className="text-center py-12 text-gray-500">
                 <Music className="w-16 h-16 mx-auto mb-4 opacity-20" />
                 <p className="text-sm">No tracks in library</p>
-                {isAdmin && <p className="text-xs mt-2">Add archive.org links to get started</p>}
+                {isAdmin && <p className="text-xs mt-2">Load Mozart library to get started</p>}
               </div>
             ) : (
               <div className="space-y-2">
@@ -155,29 +161,31 @@ export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -100 }}
-                      className="bg-white/5 rounded-lg p-3 border border-white/10 hover:border-purple-500/30 transition-all group"
+                      className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-purple-500/30 transition-all group"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-start gap-3">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => handlePlay(track)}
-                          className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 shrink-0"
+                          className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 shrink-0 mt-0.5"
                         >
                           <Play className="w-5 h-5" />
                         </Button>
 
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">{track.title}</div>
-                          <div className="text-xs text-gray-500 truncate">
-                            {track.artist}
-                            {track.album && ` • ${track.album}`}
-                            {track.duration > 0 && ` • ${Math.floor(track.duration / 60)}:${(track.duration % 60).toFixed(0).padStart(2, '0')}`}
+                          <div className="font-medium text-sm mb-1 leading-tight">{track.title}</div>
+                          <div className="text-xs text-gray-500 space-y-0.5">
+                            <div>{track.artist}</div>
+                            {track.album && <div>{track.album}</div>}
+                            {track.duration > 0 && (
+                              <div>{Math.floor(track.duration / 60)}:{Math.floor(track.duration % 60).toString().padStart(2, '0')}</div>
+                            )}
                           </div>
                           {track.tags?.length > 0 && (
-                            <div className="flex gap-1 mt-1 flex-wrap">
-                              {track.tags.slice(0, 3).map((tag, i) => (
-                                <span key={i} className="text-xs bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded">
+                            <div className="flex gap-1 mt-2 flex-wrap">
+                              {track.tags.map((tag, i) => (
+                                <span key={i} className="text-xs bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded">
                                   {tag}
                                 </span>
                               ))}
@@ -190,7 +198,7 @@ export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
                             variant="ghost"
                             size="icon"
                             onClick={() => deleteMutation.mutate(track.id)}
-                            className="text-gray-500 hover:text-red-400 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="text-gray-500 hover:text-red-400 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
