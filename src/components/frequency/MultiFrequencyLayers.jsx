@@ -180,10 +180,7 @@ export default function MultiFrequencyLayers({
                     <SelectContent className="bg-gray-900 border-white/10">
                       {waveforms.map((wave) => (
                         <SelectItem key={wave.value} value={wave.value} className="text-white">
-                          <span className="flex items-center gap-1">
-                            <span>{wave.icon}</span>
-                            <span>{wave.label}</span>
-                          </span>
+                          {wave.icon} {wave.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
