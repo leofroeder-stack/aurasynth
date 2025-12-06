@@ -43,17 +43,17 @@ export default function ArchiveLibrary({ onPlayTrack, currentUser }) {
         await createMutation.mutateAsync({
           url: track.url,
           title: track.title,
-          artist: 'Wolfgang Amadeus Mozart',
-          album: 'Mozart Collection',
-          duration: 0,
+          artist: track.artist,
+          album: track.album,
+          duration: track.duration,
           tags: ['classical', 'mozart']
         });
       }
       
-      alert(`Added ${library.length} Mozart tracks to library`);
+      alert(`Successfully added ${library.length} Mozart tracks to library`);
     } catch (error) {
       console.error('Error loading Mozart library:', error);
-      alert('Failed to load Mozart library');
+      alert(`Failed to load Mozart library: ${error.message}`);
     }
     setIsScanning(false);
   };
