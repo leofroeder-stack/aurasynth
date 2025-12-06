@@ -753,6 +753,259 @@ export default function WebGLVisualizer({
 
                                 return col;
                               }
+
+              vec3 styleDNA(vec2 uv, float time, float freqNorm, float audioSum) {
+                vec3 col = vec3(0.0);
+                float f = freqNorm * 4.0;
+                
+                // Rotate based on frequency
+                float rotation = time * u_speed * (0.5 + f);
+                uv = vec2(uv.x * cos(rotation) - uv.y * sin(rotation), 
+                         uv.x * sin(rotation) + uv.y * cos(rotation));
+                
+                // Double helix structure
+                float helixSpeed = time * u_speed * (2.0 + f * 2.0);
+                float twist = uv.y * (5.0 + f * 10.0) + helixSpeed;
+                
+                // Strand 1
+                vec2 strand1 = vec2(
+                  uv.x - sin(twist) * 0.3,
+                  uv.y
+                );
+                float dist1 = length(vec2(strand1.x, 0.0));
+                float helix1 = 0.02 / dist1;
+                helix1 *= smoothstep(1.5, 0.0, abs(strand1.y));
+                
+                // Strand 2
+                vec2 strand2 = vec2(
+                  uv.x + sin(twist) * 0.3,
+                  uv.y
+                );
+                float dist2 = length(vec2(strand2.x, 0.0));
+                float helix2 = 0.02 / dist2;
+                helix2 *= smoothstep(1.5, 0.0, abs(strand2.y));
+                
+                col += getColor(f + time * 0.1) * helix1 * u_intensity;
+                col += getColor(f + 0.3 + time * 0.1) * helix2 * u_intensity;
+                
+                // Base pairs connecting the strands
+                float pairs = mod(twist, PI / 2.0);
+                if (pairs < 0.3) {
+                  float baseX = sin(twist) * 0.3;
+                  float bridgeDist = abs(uv.x / baseX - 1.0);
+                  if (abs(baseX) > 0.01) {
+                    float bridge = smoothstep(0.3, 0.0, bridgeDist) * smoothstep(1.5, 0.0, abs(uv.y));
+                    bridge *= (1.0 + audioSum);
+                    col += getColor(twist * 0.2 + f * 2.0) * bridge * 0.5 * u_intensity;
+                  }
+                }
+                
+                col += getColor(f * 2.0 + time * 0.1) * exp(-length(uv) * 1.5) * u_bloom;
+                return col;
+              }
+
+              vec3 styleVortex(vec2 uv, float time, float freqNorm, float audioSum) {
+                vec3 col = vec3(0.0);
+                float f = freqNorm * 5.0;
+                
+                float angle = atan(uv.y, uv.x);
+                float radius = length(uv);
+                
+                // Spiral vortex
+                float spiral = angle + radius * (8.0 + f * 20.0) - time * u_speed * (3.0 + f * 5.0);
+                spiral += sin(radius * 10.0 - time * 5.0) * 0.5;
+                
+                // Vortex bands
+                float bands = sin(spiral * u_complexity * 3.0) * 0.5 + 0.5;
+                bands *= exp(-radius * (1.0 - f * 0.3));
+                bands *= 1.0 + audioSum;
+                
+                // Spinning particles
+                for (float i = 0.0; i < 8.0; i++) {
+                  float particleAngle = angle + i * TAU / 8.0 + time * u_speed * (1.0 + i * 0.1);
+                  float particleRadius = 0.3 + sin(time * u_speed + i) * 0.2;
+                  vec2 particlePos = vec2(cos(particleAngle), sin(particleAngle)) * particleRadius;
+                  float dist = length(uv - particlePos);
+                  col += getColor(i * 0.15 + f * 2.0 + time * 0.1) * (0.03 / dist) * u_intensity * 0.5;
+                }
+                
+                col += getColor(bands + f * 3.0 + time * 0.1) * bands * u_intensity;
+                col += getColor(spiral * 0.1 + f) * exp(-radius * 2.0) * u_bloom;
+                
+                return col;
+              }
+
+              vec3 styleConstellation(vec2 uv, float time, float freqNorm, float audioSum) {
+                vec3 col = vec3(0.0);
+                float f = freqNorm * 3.0;
+                
+                // Stars
+                float numStars = 30.0 + f * 20.0;
+                for (float i = 0.0; i < 50.0; i++) {
+                  if (i >= numStars) break;
+                  
+                  float starAngle = hash(vec2(i, 0.0)) * TAU;
+                  float starDist = hash(vec2(0.0, i)) * (0.8 + f * 0.3);
+                  float twinkle = sin(time * u_speed * (2.0 + hash(vec2(i, i)) * 3.0)) * 0.5 + 0.5;
+                  
+                  vec2 starPos = vec2(cos(starAngle), sin(starAngle)) * starDist;
+                  starPos += vec2(sin(time * 0.5 + i), cos(time * 0.3 + i)) * 0.05 * audioSum;
+                  
+                  float dist = length(uv - starPos);
+                  float star = 0.005 / dist * twinkle;
+                  star += exp(-dist * 20.0) * twinkle * 0.5;
+                  
+                  col += getColor(hash(vec2(i, i + 1.0)) + time * 0.05) * star * u_intensity;
+                  
+                  // Connect nearby stars
+                  for (float j = i + 1.0; j < 50.0; j++) {
+                    if (j >= numStars) break;
+                    float otherAngle = hash(vec2(j, 0.0)) * TAU;
+                    float otherDist = hash(vec2(0.0, j)) * (0.8 + f * 0.3);
+                    vec2 otherPos = vec2(cos(otherAngle), sin(otherAngle)) * otherDist;
+                    
+                    float linkDist = length(starPos - otherPos);
+                    if (linkDist < 0.3) {
+                      vec2 toOther = otherPos - starPos;
+                      float lineDist = abs(dot(uv - starPos, vec2(-toOther.y, toOther.x))) / length(toOther);
+                      float along = dot(uv - starPos, toOther) / dot(toOther, toOther);
+                      if (along > 0.0 && along < 1.0) {
+                        float line = smoothstep(0.01, 0.0, lineDist) * (1.0 - linkDist / 0.3);
+                        col += getColor(f + time * 0.1) * line * 0.2 * u_intensity * (1.0 + audioSum * 0.5);
+                      }
+                    }
+                  }
+                }
+                
+                col += getColor(f + time * 0.05) * exp(-length(uv) * 1.0) * u_bloom * 0.3;
+                return col;
+              }
+
+              vec3 styleCrystal(vec2 uv, float time, float freqNorm, float audioSum) {
+                vec3 col = vec3(0.0);
+                float f = freqNorm * 4.0;
+                
+                float angle = atan(uv.y, uv.x);
+                float radius = length(uv);
+                
+                // Crystal facets
+                float facets = u_symmetry * 2.0 + f * 6.0;
+                float facetAngle = mod(angle + time * u_speed * 0.2, TAU / facets);
+                
+                // Refraction effect
+                vec2 refractUV = uv * (1.0 + sin(facetAngle * facets) * 0.1);
+                
+                // Crystal layers
+                for (float i = 1.0; i < 5.0; i++) {
+                  float layerRadius = i * 0.25 * (1.0 + sin(time * u_speed + i) * 0.1);
+                  float crystal = smoothstep(0.02, 0.0, abs(radius - layerRadius));
+                  crystal *= abs(sin(facetAngle * facets * i));
+                  crystal *= 1.0 + audioSum;
+                  
+                  vec3 facetColor = getColor(i * 0.2 + f * 2.0 + time * 0.1);
+                  col += facetColor * crystal * u_intensity;
+                  
+                  // Internal reflections
+                  float reflect = sin(radius * 20.0 - time * 3.0 + i) * 0.5 + 0.5;
+                  reflect *= exp(-abs(radius - layerRadius) * 10.0);
+                  col += facetColor * reflect * 0.3 * u_bloom;
+                }
+                
+                // Center glow
+                float centerGlow = exp(-radius * (5.0 - f * 2.0)) * (1.0 + audioSum);
+                col += getColor(f * 3.0 + time * 0.1) * centerGlow * u_bloom;
+                
+                return col;
+              }
+
+              vec3 styleBubbles(vec2 uv, float time, float freqNorm, float audioSum) {
+                vec3 col = vec3(0.0);
+                float f = freqNorm * 4.0;
+                
+                float numBubbles = 15.0 + f * 10.0;
+                for (float i = 0.0; i < 25.0; i++) {
+                  if (i >= numBubbles) break;
+                  
+                  float phase = hash(vec2(i, 0.0)) * TAU;
+                  float lifeTime = fract(time * u_speed * 0.3 + phase);
+                  
+                  vec2 bubblePos = vec2(
+                    sin(phase) * 0.6,
+                    lifeTime * 2.0 - 1.0
+                  );
+                  bubblePos.x += sin(lifeTime * PI * 2.0 + i) * 0.2;
+                  
+                  float bubbleSize = 0.05 + hash(vec2(0.0, i)) * 0.1;
+                  bubbleSize *= (1.0 + audioSum * 0.3);
+                  
+                  float dist = length(uv - bubblePos);
+                  
+                  // Bubble outline
+                  float bubble = smoothstep(bubbleSize, bubbleSize - 0.01, dist);
+                  bubble *= smoothstep(bubbleSize - 0.03, bubbleSize - 0.01, dist);
+                  bubble *= smoothstep(0.0, 0.3, lifeTime) * smoothstep(1.0, 0.7, lifeTime);
+                  
+                  // Iridescent shimmer
+                  float shimmerAngle = atan(uv.y - bubblePos.y, uv.x - bubblePos.x);
+                  float shimmer = sin(shimmerAngle * 3.0 + time * 2.0 + i) * 0.5 + 0.5;
+                  
+                  vec3 bubbleCol = getColor(shimmer + f * 2.0 + i * 0.1);
+                  col += bubbleCol * bubble * u_intensity;
+                  
+                  // Highlight
+                  vec2 highlightOffset = vec2(-0.3, 0.3) * bubbleSize;
+                  float highlight = exp(-length(uv - bubblePos - highlightOffset) * 30.0);
+                  col += vec3(1.0) * highlight * bubble * 0.5;
+                }
+                
+                col += getColor(f + time * 0.1) * exp(-length(uv) * 1.0) * u_bloom * 0.3;
+                return col;
+              }
+
+              vec3 styleWeb(vec2 uv, float time, float freqNorm, float audioSum) {
+                vec3 col = vec3(0.0);
+                float f = freqNorm * 4.0;
+                
+                float angle = atan(uv.y, uv.x);
+                float radius = length(uv);
+                
+                // Radial strands
+                float strands = u_symmetry * 2.0 + f * 8.0;
+                for (float i = 0.0; i < 20.0; i++) {
+                  if (i >= strands) break;
+                  float strandAngle = i * TAU / strands;
+                  float angleDist = abs(angle - strandAngle);
+                  angleDist = min(angleDist, abs(angleDist - TAU));
+                  
+                  float strand = smoothstep(0.02, 0.0, angleDist * radius);
+                  strand *= smoothstep(1.5, 0.0, radius);
+                  col += getColor(i * 0.1 + f * 2.0 + time * 0.05) * strand * u_intensity * 0.5;
+                }
+                
+                // Concentric rings
+                for (float r = 0.2; r < 1.5; r += 0.2) {
+                  float ring = smoothstep(0.015, 0.0, abs(radius - r));
+                  ring *= sin(angle * strands * 0.5 + time * u_speed) * 0.3 + 0.7;
+                  ring *= 1.0 + audioSum * 0.5;
+                  col += getColor(r + f * 2.0 + time * 0.1) * ring * u_intensity * 0.5;
+                }
+                
+                // Dew drops
+                for (float i = 0.0; i < 12.0; i++) {
+                  float dropAngle = hash(vec2(i, 0.0)) * TAU;
+                  float dropRadius = 0.3 + hash(vec2(0.0, i)) * 0.8;
+                  vec2 dropPos = vec2(cos(dropAngle), sin(dropAngle)) * dropRadius;
+                  
+                  float sparkle = sin(time * u_speed * 3.0 + i) * 0.5 + 0.5;
+                  float dist = length(uv - dropPos);
+                  float drop = exp(-dist * 40.0) * sparkle * (1.0 + audioSum);
+                  
+                  col += getColor(i * 0.15 + f) * drop * u_bloom;
+                }
+                
+                col += getColor(f + time * 0.1) * exp(-radius * 2.0) * u_bloom * 0.5;
+                return col;
+              }
             
             vec3 styleChladni(vec2 uv, float time, float freqNorm, float audioSum) {
         // Animated Chladni plate simulation - sand patterns on vibrating metal
@@ -917,8 +1170,20 @@ export default function WebGLVisualizer({
                         finalColor = styleLiquid(uv, time, freqNorm, audioSum);
                       } else if (u_visualStyle == 17) {
                                                     finalColor = styleElectric(uv, time, freqNorm, audioSum);
-                                                  } else {
+                                                  } else if (u_visualStyle == 18) {
                                                     finalColor = styleElectrons(uv, time, freqNorm, audioSum);
+                                                  } else if (u_visualStyle == 19) {
+                                                    finalColor = styleDNA(uv, time, freqNorm, audioSum);
+                                                  } else if (u_visualStyle == 20) {
+                                                    finalColor = styleVortex(uv, time, freqNorm, audioSum);
+                                                  } else if (u_visualStyle == 21) {
+                                                    finalColor = styleConstellation(uv, time, freqNorm, audioSum);
+                                                  } else if (u_visualStyle == 22) {
+                                                    finalColor = styleCrystal(uv, time, freqNorm, audioSum);
+                                                  } else if (u_visualStyle == 23) {
+                                                    finalColor = styleBubbles(uv, time, freqNorm, audioSum);
+                                                  } else {
+                                                    finalColor = styleWeb(uv, time, freqNorm, audioSum);
                                                   }
         
         vec3 glowColor = getColor(freqNorm + time * 0.1);
@@ -1045,7 +1310,7 @@ export default function WebGLVisualizer({
           const dragVelocityLocation = gl.getUniformLocation(program, 'u_dragVelocity');
 
           const waveTypes = { sine: 0, square: 1, sawtooth: 2, triangle: 3 };
-    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12, aurora: 13, fireworks: 14, mandala: 15, liquid: 16, electric: 17, electrons: 18 };
+    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12, aurora: 13, fireworks: 14, mandala: 15, liquid: 16, electric: 17, electrons: 18, dna: 19, vortex: 20, constellation: 21, crystal: 22, bubbles: 23, web: 24 };
           const colorPalettes = { cyber: 0, fire: 1, nature: 2, ocean: 3, sunset: 4, neon: 5, aurora: 6, lava: 7, ice: 8, candy: 9, galaxy: 10 };
 
     const render = () => {
