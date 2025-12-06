@@ -697,7 +697,121 @@ export default function WebGLVisualizer({
                                 return col;
                               }
 
-                              vec3 styleElectrons(vec2 uv, float time, float freqNorm, float audioSum) {
+                              vec3 styleBinary(vec2 uv, float time, float freqNorm, float audioSum) {
+              vec3 col = vec3(0.0);
+              float f = freqNorm * 5.0;
+              
+              // Convert frequency to musical note and then to binary
+              // Musical notes: A=440Hz, each semitone is 2^(1/12) higher
+              float noteNum = 12.0 * log(u_frequency / 440.0) / log(2.0);
+              noteNum = mod(noteNum + 120.0, 12.0); // Map to 0-11 range (C to B)
+              
+              // Extract frequency bands for note detection
+              float bass = 0.0;
+              float mid = 0.0;
+              float high = 0.0;
+              for (int i = 0; i < 32; i++) {
+                if (i < 10) bass += u_audioData[i];
+                else if (i < 20) mid += u_audioData[i];
+                else high += u_audioData[i];
+              }
+              bass /= 10.0;
+              mid /= 10.0;
+              high /= 12.0;
+              
+              // Create binary rain grid
+              vec2 gridSize = vec2(30.0 + f * 20.0, 40.0);
+              vec2 gridUV = uv * gridSize;
+              vec2 gridID = floor(gridUV);
+              vec2 gridLocal = fract(gridUV);
+              
+              // Time-based flow with music
+              float flowSpeed = u_speed * (2.0 + audioSum * 3.0 + bass * 5.0);
+              float flow = time * flowSpeed;
+              
+              // Each column has different speed based on hash
+              float colHash = hash(vec2(gridID.x, 0.0));
+              float colSpeed = 0.5 + colHash * 1.5;
+              float yOffset = mod(flow * colSpeed + colHash * 100.0, gridSize.y * 2.0);
+              
+              // Determine if this cell shows a bit
+              float cellY = gridID.y + yOffset;
+              float cellHash = hash(vec2(gridID.x, floor(cellY)));
+              
+              // Convert note to binary (8-bit representation)
+              float noteBinary = floor(noteNum);
+              float bitPosition = mod(floor(cellY), 8.0);
+              float bitValue = mod(floor(noteBinary / pow(2.0, bitPosition)), 2.0);
+              
+              // Add audio-reactive random bits
+              float randomBit = step(0.5 + audioSum * 0.3, cellHash);
+              
+              // Mix note bits with audio bits
+              float finalBit = mix(bitValue, randomBit, 0.3 + sin(time + gridID.x) * 0.2);
+              
+              // Strong pulse with bass
+              float pulse = sin(cellY * 0.5 - flow * 2.0 + bass * 10.0) * 0.5 + 0.5;
+              pulse *= (1.0 + bass * 3.0);
+              
+              // Trail effect - fade from head to tail
+              float trailLength = 8.0 + mid * 10.0;
+              float distFromHead = mod(gridID.y - cellY, gridSize.y);
+              float trail = smoothstep(trailLength, 0.0, distFromHead);
+              trail *= pulse;
+              
+              // Digit rendering (0 or 1)
+              float digit = 0.0;
+              vec2 digitPos = gridLocal - 0.5;
+              
+              if (finalBit < 0.5) {
+                // Render '0' - circle
+                float circle = length(digitPos);
+                digit = smoothstep(0.35, 0.25, circle) * (1.0 - smoothstep(0.2, 0.1, circle));
+              } else {
+                // Render '1' - vertical line
+                digit = smoothstep(0.15, 0.05, abs(digitPos.x)) * smoothstep(0.4, 0.35, abs(digitPos.y));
+              }
+              
+              digit *= trail;
+              digit *= 1.0 + audioSum * 2.0;
+              
+              // Color based on note value and frequency bands
+              float colorShift = noteNum / 12.0 + f + time * 0.1;
+              vec3 digitColor = getColor(colorShift);
+              
+              // Frequency-specific coloring
+              digitColor.r *= 0.3 + high * 0.7;
+              digitColor.g *= 0.5 + mid * 0.5;
+              digitColor.b *= 0.4 + bass * 0.6;
+              
+              col += digitColor * digit * u_intensity;
+              
+              // Glow effect on active columns
+              if (trail > 0.5) {
+                float columnGlow = exp(-abs(digitPos.x) * 3.0) * trail;
+                columnGlow *= (1.0 + audioSum * 2.0 + bass * 3.0);
+                col += getColor(colorShift + 0.2) * columnGlow * 0.3 * u_bloom;
+              }
+              
+              // Musical note annotation - show current note at bottom
+              if (uv.y < -0.8) {
+                float noteDisplay = sin((uv.x + noteNum / 12.0) * 50.0) * 0.5 + 0.5;
+                noteDisplay *= smoothstep(-0.9, -0.8, uv.y);
+                col += getColor(noteNum / 12.0 + time * 0.1) * noteDisplay * audioSum;
+              }
+              
+              // Scanline effect
+              float scanline = sin(uv.y * gridSize.y * 2.0 - time * 10.0) * 0.05 + 0.95;
+              col *= scanline;
+              
+              // Screen flicker with strong notes
+              float flicker = 1.0 + sin(time * 60.0 + audioSum * 50.0) * 0.02 * audioSum;
+              col *= flicker;
+              
+              return col;
+            }
+            
+            vec3 styleElectrons(vec2 uv, float time, float freqNorm, float audioSum) {
                                 vec3 col = vec3(0.0);
                                 float f = freqNorm * 3.0;
 
@@ -960,10 +1074,12 @@ export default function WebGLVisualizer({
                       } else if (u_visualStyle == 16) {
                         finalColor = styleLiquid(uv, time, freqNorm, audioSum);
                       } else if (u_visualStyle == 17) {
-                                                    finalColor = styleElectric(uv, time, freqNorm, audioSum);
-                                                  } else {
-                                                    finalColor = styleElectrons(uv, time, freqNorm, audioSum);
-                                                  }
+                                                                  finalColor = styleElectric(uv, time, freqNorm, audioSum);
+                                                                } else if (u_visualStyle == 18) {
+                                                                  finalColor = styleElectrons(uv, time, freqNorm, audioSum);
+                                                                } else {
+                                                                  finalColor = styleBinary(uv, time, freqNorm, audioSum);
+                                                                }
         
         vec3 glowColor = getColor(freqNorm + time * 0.1);
         float glow = exp(-length(uv0) * (2.0 - freqNorm)) * u_bloom;
@@ -1089,7 +1205,7 @@ export default function WebGLVisualizer({
           const dragVelocityLocation = gl.getUniformLocation(program, 'u_dragVelocity');
 
           const waveTypes = { sine: 0, square: 1, sawtooth: 2, triangle: 3 };
-    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12, aurora: 13, fireworks: 14, mandala: 15, liquid: 16, electric: 17, electrons: 18 };
+    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12, aurora: 13, fireworks: 14, mandala: 15, liquid: 16, electric: 17, electrons: 18, binary: 19 };
           const colorPalettes = { cyber: 0, fire: 1, nature: 2, ocean: 3, sunset: 4, neon: 5, aurora: 6, lava: 7, ice: 8, candy: 9, galaxy: 10 };
 
     const render = () => {
