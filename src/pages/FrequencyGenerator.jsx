@@ -18,7 +18,16 @@ export default function FrequencyGenerator() {
   const [currentUser, setCurrentUser] = React.useState(null);
   
   React.useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
+    base44.auth.me().then(user => {
+      setCurrentUser(user);
+      // Load user's default visual preferences
+      if (user.default_visual_style) {
+        setVisualStyle(user.default_visual_style);
+      }
+      if (user.default_color_palette) {
+        setColorPalette(user.default_color_palette);
+      }
+    }).catch(() => {});
   }, []);
   const [frequency, setFrequency] = useState(440);
   const [layers, setLayers] = useState([]); // Additional frequency layers

@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Palette, Zap, Layers, RotateCcw, Sun, Shuffle, RotateCw, X } from "lucide-react";
+import { Sparkles, Palette, Zap, Layers, RotateCcw, Sun, Shuffle, RotateCw, X, Star } from "lucide-react";
 import { motion } from "framer-motion";
+import { base44 } from '@/api/base44Client';
 
 export default function VisualControls({
   visualStyle,
@@ -81,6 +82,19 @@ export default function VisualControls({
       setVisualStyle(randomStyle.value);
       setColorPalette(randomPalette.value);
       randomizeSettings();
+    };
+
+    const saveAsDefault = async () => {
+      try {
+        await base44.auth.updateMe({
+          default_visual_style: visualStyle,
+          default_color_palette: colorPalette
+        });
+        alert('Saved as default visual preference!');
+      } catch (error) {
+        console.error('Failed to save default:', error);
+        alert('Failed to save default');
+      }
     };
 
   const sliderConfig = [
@@ -196,7 +210,16 @@ export default function VisualControls({
                       </div>
 
                       {/* Quick Actions */}
-                      <div className="flex justify-center gap-3 pt-2">
+                      <div className="flex justify-center gap-2 pt-2 flex-wrap">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={saveAsDefault}
+                          className="border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 gap-2"
+                        >
+                          <Star className="w-3 h-3" />
+                          Save as Default
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
