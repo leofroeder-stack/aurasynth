@@ -81,6 +81,25 @@ export default function AudioControls({
                             <AISoundscapeGenerator
                               onApplyParameters={onApplyAIParameters || (() => {})}
                               isPlaying={isPlaying}
+                              currentParameters={{
+                                frequency,
+                                volume,
+                                waveType,
+                                layers: [],
+                                visualStyle: '',
+                                colorPalette: '',
+                                speed: 1,
+                                intensity: 1,
+                                complexity: 1,
+                                symmetry: 4,
+                                bloom: 0.5,
+                                binauralEnabled: false,
+                                binauralFreq: 10,
+                                isochronicEnabled: false,
+                                isochronicFreq: 10,
+                                isochronicDepth: 0.8
+                              }}
+                              onApplyVisualStyle={onApplyVisualStyle || (() => {})}
                             />
                             <TherapyFrequencyPicker onSelectFrequency={setFrequency} />
                             <AmbientAnalyzer 
