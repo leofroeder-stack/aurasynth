@@ -10,6 +10,7 @@ import TherapyFrequencyPicker from './TherapyFrequencyPicker';
 import AmbientAnalyzer from './AmbientAnalyzer';
 import AudioInputControls from './AudioInputControls';
 import BackgroundAudioMixer from './BackgroundAudioMixer';
+import AISoundscapeGenerator from './AISoundscapeGenerator';
 
 export default function AudioControls({ 
   frequency, 
@@ -30,7 +31,8 @@ export default function AudioControls({
   audioFileName,
   onApplyVisualStyle,
   audioContext,
-  analyserNode
+  analyserNode,
+  onApplyAIParameters
 }) {
   const [customFreqOpen, setCustomFreqOpen] = useState(false);
   const [customFreqValue, setCustomFreqValue] = useState('');
@@ -76,18 +78,22 @@ export default function AudioControls({
       {/* Top bar with Therapy on left, controls on right */}
       <div className="flex items-center justify-between -mt-2 flex-wrap gap-2">
         <div className="flex items-center gap-2">
-                          <TherapyFrequencyPicker onSelectFrequency={setFrequency} />
-                          <AmbientAnalyzer 
-                            onApplyFrequency={setFrequency} 
-                            onApplyVisualStyle={onApplyVisualStyle || (() => {})} 
-                          />
-                          <AudioInputControls />
-                          <BackgroundAudioMixer 
-                            audioContext={audioContext}
-                            destinationNode={analyserNode}
-                            isPlaying={isPlaying}
-                          />
-                        </div>
+                            <AISoundscapeGenerator
+                              onApplyParameters={onApplyAIParameters || (() => {})}
+                              isPlaying={isPlaying}
+                            />
+                            <TherapyFrequencyPicker onSelectFrequency={setFrequency} />
+                            <AmbientAnalyzer 
+                              onApplyFrequency={setFrequency} 
+                              onApplyVisualStyle={onApplyVisualStyle || (() => {})} 
+                            />
+                            <AudioInputControls />
+                            <BackgroundAudioMixer 
+                              audioContext={audioContext}
+                              destinationNode={analyserNode}
+                              isPlaying={isPlaying}
+                            />
+                          </div>
 
         <div className="flex items-center gap-2 md:gap-3 flex-wrap">
           {onOpenVisuals && (

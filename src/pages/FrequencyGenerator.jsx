@@ -720,6 +720,30 @@ export default function FrequencyGenerator() {
                                                 setVisualStyle(style);
                                                 setColorPalette(palette);
                                               }}
+                                              onApplyAIParameters={(params) => {
+                                                setFrequency(params.mainFrequency);
+                                                setVolume(params.volume);
+                                                setWaveType(params.waveType);
+                                                setLayers(params.layers.map((layer, idx) => ({
+                                                  id: Date.now() + idx,
+                                                  frequency: layer.frequency,
+                                                  volume: layer.volume,
+                                                  waveType: layer.waveType,
+                                                  enabled: true
+                                                })));
+                                                setVisualStyle(params.visualStyle);
+                                                setColorPalette(params.colorPalette);
+                                                setSpeed(params.speed);
+                                                setIntensity(params.intensity);
+                                                setComplexity(params.complexity);
+                                                setSymmetry(params.symmetry);
+                                                setBloom(params.bloom);
+                                                setBinauralEnabled(params.binaural.enabled);
+                                                setBinauralFreq(params.binaural.frequency);
+                                                setIsochronicEnabled(params.isochronic.enabled);
+                                                setIsochronicFreq(params.isochronic.frequency);
+                                                setIsochronicDepth(params.isochronic.depth);
+                                              }}
                                               audioContext={audioContextRef.current}
                                               analyserNode={analyserRef.current}
                                               minFreq={minFreq}
