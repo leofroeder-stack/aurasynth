@@ -373,7 +373,7 @@ Be conversational and insightful. Keep it under 200 words.`;
           <span className="text-xs hidden md:inline">AI Generate</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-gray-900 border-white/10 text-white max-w-lg">
+      <DialogContent className="bg-gray-900 border-white/10 text-white max-w-lg max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wand2 className="w-5 h-5 text-purple-400" />
@@ -381,7 +381,7 @@ Be conversational and insightful. Keep it under 200 words.`;
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 pt-4">
+        <div className="space-y-4 pt-4 overflow-y-auto pr-2">
           {/* Mood Selection */}
           <div className="space-y-2">
             <label className="text-sm text-gray-400">Mood / Intention</label>
