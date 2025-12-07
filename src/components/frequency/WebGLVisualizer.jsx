@@ -1130,11 +1130,27 @@ export default function WebGLVisualizer({
                     isochronicMod = 1.0 - u_isochronicDepth * (1.0 - pulse);
                   }
 
+                  // Enhanced audio analysis with frequency band separation
                   float audioSum = 0.0;
-        for (int i = 0; i < 32; i++) {
-          audioSum += u_audioData[i];
-        }
-        audioSum /= 32.0;
+                  float bassSum = 0.0;
+                  float midSum = 0.0;
+                  float highSum = 0.0;
+                  for (int i = 0; i < 32; i++) {
+                    audioSum += u_audioData[i];
+                    if (i < 10) bassSum += u_audioData[i];
+                    else if (i < 20) midSum += u_audioData[i];
+                    else highSum += u_audioData[i];
+                  }
+                  audioSum /= 32.0;
+                  bassSum /= 10.0;
+                  midSum /= 10.0;
+                  highSum /= 12.0;
+
+                  // Amplify audio response
+                  audioSum = pow(audioSum, 0.7) * 1.5;
+                  bassSum = pow(bassSum, 0.6) * 2.0;
+                  midSum = pow(midSum, 0.7) * 1.8;
+                  highSum = pow(highSum, 0.8) * 1.6;
         
         vec3 finalColor = vec3(0.0);
         
@@ -1182,45 +1198,93 @@ export default function WebGLVisualizer({
                                                                                                             finalColor = styleSeismograph(uv, time, freqNorm, audioSum);
                                                                                                           }
         
-        vec3 glowColor = getColor(freqNorm + time * 0.1);
-        float glow = exp(-length(uv0) * (2.0 - freqNorm)) * u_bloom;
-        finalColor += glowColor * glow * u_amplitude * 0.3;
+        // Enhanced glow with stronger frequency and amplitude response
+        vec3 glowColor = getColor(freqNorm * 2.0 + time * 0.15);
+        float glow = exp(-length(uv0) * (2.0 - freqNorm * 1.5)) * u_bloom;
+        glow *= (1.0 + audioSum * 3.0 + bassSum * 2.0);
+        finalColor += glowColor * glow * u_amplitude * (0.5 + u_amplitude * 0.8);
+
+        // Add pulsing energy rings based on amplitude
+        float pulseRing = sin(length(uv0) * (20.0 + freqNorm * 30.0) - time * (5.0 + audioSum * 15.0));
+        pulseRing = pow(max(0.0, pulseRing), 3.0);
+        pulseRing *= exp(-abs(length(uv0) - 0.5) * 10.0) * (audioSum + bassSum * 0.5);
+        finalColor += getColor(time * 0.3 + freqNorm) * pulseRing * u_amplitude * 0.6;
         
         float vignette = 1.0 - length(uv0) * 0.4;
                                 finalColor *= vignette;
 
-                                // Touch reactive effects
+                                // Enhanced touch reactive effects with wave particles
                                 for (int i = 0; i < 5; i++) {
                                   if (float(i) >= u_touchCount) break;
                                   vec2 touchPos = u_touchPoints[i];
                                   float touchDist = length(uv - touchPos);
 
-                                  // Ripple wave from touch point
-                                  float ripple = sin(touchDist * 30.0 - time * 8.0) * 0.5 + 0.5;
-                                  ripple *= exp(-touchDist * 3.0);
-                                  ripple *= smoothstep(1.0, 0.0, touchDist);
-                                  finalColor += getColor(touchDist + time * 0.5) * ripple * 0.5;
+                                  // Multi-layered ripples with amplitude response
+                                  float ampBoost = 1.0 + u_amplitude * 3.0;
+                                  for (float r = 0.0; r < 3.0; r++) {
+                                    float ripple = sin(touchDist * (30.0 + r * 10.0) - time * (8.0 + r * 2.0)) * 0.5 + 0.5;
+                                    ripple *= exp(-touchDist * (3.0 - r * 0.5));
+                                    ripple *= smoothstep(1.0, 0.0, touchDist);
+                                    ripple *= ampBoost;
+                                    finalColor += getColor(touchDist + time * 0.5 + r * 0.3) * ripple * (0.8 - r * 0.2);
+                                  }
 
-                                  // Glow at touch point
-                                  float touchGlow = 0.03 / (touchDist + 0.05);
-                                  finalColor += getColor(time * 0.2 + float(i) * 0.3) * touchGlow * 0.3;
+                                  // Frequency-reactive particle spray from touch
+                                  float angle = atan(uv.y - touchPos.y, uv.x - touchPos.x);
+                                  for (float p = 0.0; p < 8.0; p++) {
+                                    float particleAngle = angle + p * TAU / 8.0 + time * freqNorm * 5.0;
+                                    float particleRadius = time * 0.3 * (1.0 + freqNorm * 2.0);
+                                    particleRadius = mod(particleRadius, 1.0);
+                                    vec2 particlePos = touchPos + vec2(cos(particleAngle), sin(particleAngle)) * particleRadius;
+                                    float particleDist = length(uv - particlePos);
+                                    float particle = 0.02 / (particleDist + 0.01);
+                                    particle *= (1.0 - particleRadius) * ampBoost;
+                                    finalColor += getColor(p * 0.1 + freqNorm + time * 0.2) * particle * 0.4;
+                                  }
 
-                                  // Multi-touch harmonics (when more than one touch)
+                                  // Intense glow at touch point with frequency modulation
+                                  float touchGlow = 0.08 / (touchDist + 0.03);
+                                  touchGlow *= (1.0 + sin(time * 10.0 + freqNorm * 20.0) * 0.5) * ampBoost;
+                                  finalColor += getColor(time * 0.3 + float(i) * 0.2 + freqNorm) * touchGlow * 0.6;
+
+                                  // Energy waves between touch points
                                   if (u_touchCount > 1.0 && i > 0) {
                                     vec2 prevTouch = u_touchPoints[i - 1];
                                     vec2 midPoint = (touchPos + prevTouch) * 0.5;
-                                    float harmonic = sin(length(uv - midPoint) * 50.0 - time * 10.0);
-                                    harmonic *= exp(-length(uv - midPoint) * 4.0);
-                                    finalColor += getColor(float(i) * 0.5 + time * 0.3) * abs(harmonic) * 0.3;
+                                    float lineEffect = abs(dot(normalize(touchPos - prevTouch), normalize(uv - midPoint)));
+                                    lineEffect = pow(1.0 - lineEffect, 8.0);
+                                    float wave = sin(length(uv - midPoint) * 60.0 - time * 15.0) * 0.5 + 0.5;
+                                    wave *= exp(-length(uv - midPoint) * 2.0) * lineEffect;
+                                    finalColor += getColor(float(i) * 0.5 + time * 0.4) * wave * ampBoost * 0.8;
                                   }
                                 }
 
-                                // Drag distortion effect
+                                // Enhanced drag with wave particle trail
                                 if (length(u_dragVelocity) > 0.01) {
-                                  float dragStrength = length(u_dragVelocity);
+                                  float dragStrength = length(u_dragVelocity) * 5.0;
                                   vec2 dragDir = normalize(u_dragVelocity);
-                                  float dragEffect = dot(uv, dragDir) * dragStrength * 2.0;
-                                  finalColor += getColor(dragEffect + time * 0.5) * abs(sin(dragEffect * 20.0)) * 0.2;
+
+                                  // Wave wake effect
+                                  float perpDist = abs(dot(uv, vec2(-dragDir.y, dragDir.x)));
+                                  float alongDist = dot(uv, dragDir);
+                                  float wake = exp(-perpDist * (8.0 - dragStrength));
+                                  wake *= sin(perpDist * 40.0 + alongDist * 20.0 - time * 20.0) * 0.5 + 0.5;
+                                  wake *= smoothstep(-0.5, 0.5, alongDist);
+                                  finalColor += getColor(alongDist + time * 0.8 + freqNorm) * wake * dragStrength * 0.5;
+
+                                  // Particle trail following drag
+                                  for (float t = 0.0; t < 10.0; t++) {
+                                    vec2 trailPos = dragDir * (t * 0.15 - 0.5);
+                                    float trailDist = length(uv - trailPos);
+                                    float trail = 0.03 / (trailDist + 0.02);
+                                    trail *= (1.0 - t / 10.0) * dragStrength;
+                                    finalColor += getColor(t * 0.1 + time * 0.5) * trail * 0.3;
+                                  }
+
+                                  // Directional streaks
+                                  float streak = exp(-perpDist * 12.0);
+                                  streak *= sin(alongDist * 80.0 - time * 30.0 * dragStrength) * 0.5 + 0.5;
+                                  finalColor += getColor(time + freqNorm * 2.0) * streak * dragStrength * u_amplitude * 0.4;
                                 }
 
                                 // Apply beat modulations
