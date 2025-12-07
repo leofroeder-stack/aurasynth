@@ -340,19 +340,36 @@ export default function FrequencyGenerator() {
         clearTimeout(fullscreenTimerRef.current);
         fullscreenTimerRef.current = null;
       }
+      setIsPlaying(false);
     } else {
-      if (audioFile) {
-        startAudioFile();
+      // Initialize audio context first
+      const ctx = initAudio();
+      
+      // Resume audio context if suspended (required for iOS/browsers)
+      if (ctx.state === 'suspended') {
+        ctx.resume().then(() => {
+          if (audioFile) {
+            startAudioFile();
+          } else {
+            startOscillator();
+          }
+        });
       } else {
-        startOscillator();
+        if (audioFile) {
+          startAudioFile();
+        } else {
+          startOscillator();
+        }
       }
+      
+      setIsPlaying(true);
+      
       // Auto fullscreen after 5 seconds
       fullscreenTimerRef.current = setTimeout(() => {
         enterFullscreen();
       }, 5000);
     }
-    setIsPlaying(!isPlaying);
-  }, [isPlaying, audioFile, startOscillator, stopOscillator, startAudioFile, stopAudioFile, enterFullscreen]);
+  }, [isPlaying, audioFile, initAudio, startOscillator, stopOscillator, startAudioFile, stopAudioFile, enterFullscreen]);
 
   const handleFileUpload = useCallback((file) => {
     if (isPlaying) {
