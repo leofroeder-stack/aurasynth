@@ -11,6 +11,7 @@ import AmbientAnalyzer from './AmbientAnalyzer';
 import AudioInputControls from './AudioInputControls';
 import BackgroundAudioMixer from './BackgroundAudioMixer';
 import AISoundscapeGenerator from './AISoundscapeGenerator';
+import SoundscapeLibrary from './SoundscapeLibrary';
 
 export default function AudioControls({ 
   frequency, 
@@ -100,6 +101,10 @@ export default function AudioControls({
                                 isochronicDepth: 0.8
                               }}
                               onApplyVisualStyle={onApplyVisualStyle || (() => {})}
+                            />
+                            <SoundscapeLibrary
+                              onLoadSoundscape={onApplyAIParameters || (() => {})}
+                              isPlaying={isPlaying}
                             />
                             <TherapyFrequencyPicker onSelectFrequency={setFrequency} />
                             <AmbientAnalyzer 

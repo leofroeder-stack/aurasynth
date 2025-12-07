@@ -4,9 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Sparkles, Loader2, Wand2 } from "lucide-react";
+import { Sparkles, Loader2, Wand2, Save } from "lucide-react";
 import { motion } from "framer-motion";
 import { base44 } from '@/api/base44Client';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function AISoundscapeGenerator({
   onApplyParameters,
@@ -24,6 +25,10 @@ export default function AISoundscapeGenerator({
   const [description, setDescription] = useState('');
   const [lastGenerated, setLastGenerated] = useState(null);
   const [assistantResponse, setAssistantResponse] = useState('');
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [saveName, setSaveName] = useState('');
+  const [saveLoading, setSaveLoading] = useState(false);
+  const queryClient = useQueryClient();
 
   const moods = [
     { value: 'calm', label: '🧘 Calm & Peaceful' },
@@ -145,6 +150,8 @@ Return ONLY valid JSON with this exact structure:
 
       setLastGenerated(response);
       onApplyParameters(response);
+      setShowSaveDialog(true);
+      setSaveName(`${mood ? mood.charAt(0).toUpperCase() + mood.slice(1) : 'Custom'} Soundscape`);
       
     } catch (error) {
       console.error('Failed to generate soundscape:', error);
@@ -325,6 +332,35 @@ Be conversational and insightful. Keep it under 200 words.`;
     }
   };
 
+  const handleSaveSoundscape = async () => {
+    if (!lastGenerated || !saveName.trim()) {
+      alert('Please enter a name for your soundscape');
+      return;
+    }
+
+    setSaveLoading(true);
+    try {
+      await base44.entities.SavedSoundscape.create({
+        name: saveName.trim(),
+        mood: mood,
+        genre: genre,
+        description: description,
+        parameters: lastGenerated,
+        explanation: lastGenerated.explanation
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['saved-soundscapes'] });
+      setShowSaveDialog(false);
+      setAssistantResponse(`✅ Soundscape "${saveName}" saved to your library!`);
+      setSaveName('');
+    } catch (error) {
+      console.error('Failed to save soundscape:', error);
+      alert('Failed to save soundscape. Please try again.');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -495,6 +531,51 @@ Be conversational and insightful. Keep it under 200 words.`;
           <p className="text-xs text-center text-gray-500">
             AI-powered soundscape generation, mastering, and visual matching
           </p>
+
+          {/* Save Dialog */}
+          {showSaveDialog && lastGenerated && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-br from-purple-500/20 to-cyan-500/20 border border-purple-500/30 rounded-lg p-4"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <Save className="w-4 h-4 text-purple-400" />
+                <span className="text-sm font-medium text-purple-300">Save this soundscape?</span>
+              </div>
+              <Input
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                placeholder="Enter a name..."
+                className="bg-white/5 border-white/10 text-white mb-3"
+                disabled={saveLoading}
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSaveSoundscape}
+                  disabled={saveLoading || !saveName.trim()}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700"
+                >
+                  {saveLoading ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save'
+                  )}
+                </Button>
+                <Button
+                  onClick={() => setShowSaveDialog(false)}
+                  variant="outline"
+                  className="border-white/10 text-gray-300 hover:bg-white/10"
+                  disabled={saveLoading}
+                >
+                  Skip
+                </Button>
+              </div>
+            </motion.div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
