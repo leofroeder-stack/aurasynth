@@ -835,7 +835,7 @@ export default function FrequencyGenerator() {
 
         {/* Playback Controls */}
         <AnimatePresence>
-          {currentArchiveTrack && (
+          {currentArchiveTrack && !isFullscreen && (
             <PlaybackControls
               audioElement={audioElementRef.current}
               trackTitle={currentArchiveTrack.title}
