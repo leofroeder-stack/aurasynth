@@ -351,12 +351,41 @@ Be conversational and insightful. Keep it under 200 words.`;
 
     setSaveLoading(true);
     try {
+      // Ensure parameters are properly structured for the entity
+      const paramsToSave = {
+        mainFrequency: lastGenerated.mainFrequency || lastGenerated.frequency || 432,
+        volume: lastGenerated.volume || 0.5,
+        waveType: lastGenerated.waveType || 'sine',
+        layers: (lastGenerated.layers || []).map(layer => ({
+          frequency: layer.frequency || 440,
+          volume: layer.volume || 0.3,
+          waveType: layer.waveType || 'sine',
+          enabled: layer.enabled !== false
+        })),
+        visualStyle: lastGenerated.visualStyle || 'fractal',
+        colorPalette: lastGenerated.colorPalette || 'cyber',
+        speed: lastGenerated.speed || 1,
+        intensity: lastGenerated.intensity || 1,
+        complexity: lastGenerated.complexity || 1,
+        symmetry: lastGenerated.symmetry || 4,
+        bloom: lastGenerated.bloom || 0.5,
+        binaural: {
+          enabled: lastGenerated.binaural?.enabled || false,
+          frequency: lastGenerated.binaural?.frequency || 10
+        },
+        isochronic: {
+          enabled: lastGenerated.isochronic?.enabled || false,
+          frequency: lastGenerated.isochronic?.frequency || 10,
+          depth: lastGenerated.isochronic?.depth || 0.8
+        }
+      };
+
       await base44.entities.SavedSoundscape.create({
         name: saveName.trim(),
         mood: mood || '',
         genre: genre || '',
         description: description || '',
-        parameters: lastGenerated,
+        parameters: paramsToSave,
         explanation: lastGenerated.explanation || ''
       });
 
