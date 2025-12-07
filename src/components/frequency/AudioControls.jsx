@@ -34,8 +34,7 @@ export default function AudioControls({
   onApplyVisualStyle,
   audioContext,
   analyserNode,
-  onApplyAIParameters,
-  waveType
+  onApplyAIParameters
 }) {
   const [customFreqOpen, setCustomFreqOpen] = useState(false);
   const [customFreqValue, setCustomFreqValue] = useState('');
