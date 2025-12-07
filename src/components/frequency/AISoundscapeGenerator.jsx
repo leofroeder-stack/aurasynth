@@ -149,7 +149,12 @@ Return ONLY valid JSON with this exact structure:
       });
 
       setLastGenerated(response);
-      onApplyParameters(response);
+      // Map mainFrequency to frequency for compatibility
+      const mappedParams = {
+        ...response,
+        frequency: response.mainFrequency
+      };
+      onApplyParameters(mappedParams);
       setShowSaveDialog(true);
       setSaveName(`${mood ? mood.charAt(0).toUpperCase() + mood.slice(1) : 'Custom'} Soundscape`);
       
@@ -217,6 +222,7 @@ Return optimized parameters in JSON with the same structure as input, including 
       const optimizedParams = {
         ...currentParameters,
         mainFrequency: response.mainFrequency,
+        frequency: response.mainFrequency, // Map for compatibility
         volume: response.volume,
         intensity: response.intensity,
         complexity: response.complexity,
@@ -368,7 +374,11 @@ Be conversational and insightful. Keep it under 200 words.`;
 
   const handlePreview = () => {
     if (lastGenerated) {
-      onApplyParameters(lastGenerated);
+      const mappedParams = {
+        ...lastGenerated,
+        frequency: lastGenerated.mainFrequency
+      };
+      onApplyParameters(mappedParams);
       setAssistantResponse('▶️ Preview started! The soundscape is now playing.');
     }
   };
