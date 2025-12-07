@@ -74,6 +74,7 @@ export default function FrequencyGenerator() {
   const [audioFile, setAudioFile] = useState(null);
   const [audioFileName, setAudioFileName] = useState('');
   const [currentArchiveTrack, setCurrentArchiveTrack] = useState(null);
+  const [isLibraryPlaying, setIsLibraryPlaying] = useState(false);
   const oscillatorRightRef = useRef(null);
   const pannerLeftRef = useRef(null);
   const pannerRightRef = useRef(null);
@@ -329,7 +330,7 @@ export default function FrequencyGenerator() {
 
   const togglePlay = useCallback(() => {
     if (isPlaying) {
-      if (audioFile || currentArchiveTrack) {
+      if (audioFile) {
         stopAudioFile();
       } else {
         stopOscillator();
@@ -342,7 +343,7 @@ export default function FrequencyGenerator() {
     } else {
       if (audioFile) {
         startAudioFile();
-      } else if (!currentArchiveTrack) {
+      } else {
         startOscillator();
       }
       // Auto fullscreen after 5 seconds
@@ -351,7 +352,7 @@ export default function FrequencyGenerator() {
       }, 5000);
     }
     setIsPlaying(!isPlaying);
-  }, [isPlaying, audioFile, currentArchiveTrack, startOscillator, stopOscillator, startAudioFile, stopAudioFile, enterFullscreen]);
+  }, [isPlaying, audioFile, startOscillator, stopOscillator, startAudioFile, stopAudioFile, enterFullscreen]);
 
   const handleFileUpload = useCallback((file) => {
     if (isPlaying) {
@@ -381,18 +382,18 @@ export default function FrequencyGenerator() {
 
   // Restart oscillator when beat settings change while playing
   useEffect(() => {
-    if (isPlaying && !audioFile && !currentArchiveTrack) {
+    if (isPlaying && !audioFile) {
       stopOscillator();
       startOscillator();
     }
-  }, [binauralEnabled, binauralFreq, isochronicEnabled, isochronicFreq, isochronicDepth, isPlaying, audioFile, currentArchiveTrack, stopOscillator, startOscillator]);
+  }, [binauralEnabled, binauralFreq, isochronicEnabled, isochronicFreq, isochronicDepth, isPlaying, audioFile, stopOscillator, startOscillator]);
 
   // Update layer oscillators when layers change while playing
   useEffect(() => {
-    if (isPlaying && !audioFile && !currentArchiveTrack && audioContextRef.current) {
+    if (isPlaying && !audioFile && audioContextRef.current) {
       startLayerOscillators(audioContextRef.current);
     }
-  }, [layers, isPlaying, audioFile, currentArchiveTrack, startLayerOscillators]);
+  }, [layers, isPlaying, audioFile, startLayerOscillators]);
 
   // Update volume in real-time
   useEffect(() => {
@@ -412,12 +413,6 @@ export default function FrequencyGenerator() {
   }, [waveType]);
 
   const handlePlayArchiveTrack = useCallback(async (url, title) => {
-    if (isPlaying) {
-      stopOscillator();
-      stopAudioFile();
-      setIsPlaying(false);
-    }
-    
     const ctx = initAudio();
     
     // Create new audio element for archive track
@@ -446,7 +441,7 @@ export default function FrequencyGenerator() {
     
     try {
       await audioElementRef.current.play();
-      setIsPlaying(true);
+      setIsLibraryPlaying(true);
       setAudioFileName(title);
       setCurrentArchiveTrack({ url, title });
       
@@ -458,7 +453,7 @@ export default function FrequencyGenerator() {
       console.error('Failed to play archive track:', error);
       throw new Error(`Playback failed: ${error.message}`);
     }
-  }, [isPlaying, stopOscillator, stopAudioFile, initAudio, enterFullscreen]);
+  }, [initAudio, enterFullscreen]);
 
   const handleStopArchiveTrack = useCallback(() => {
     if (audioElementRef.current) {
@@ -466,7 +461,7 @@ export default function FrequencyGenerator() {
       audioElementRef.current.currentTime = 0;
       audioElementRef.current.src = '';
     }
-    setIsPlaying(false);
+    setIsLibraryPlaying(false);
     setCurrentArchiveTrack(null);
     setAudioFileName('');
     if (fullscreenTimerRef.current) {
@@ -635,7 +630,7 @@ export default function FrequencyGenerator() {
         {visualStyle === 'ai-imagination' ? (
           <AIImaginationView
             frequency={frequency}
-            isPlaying={isPlaying}
+            isPlaying={isPlaying || isLibraryPlaying}
             analyserNode={analyserNode}
             speed={speed}
             intensity={intensity}
@@ -645,7 +640,7 @@ export default function FrequencyGenerator() {
         ) : (
           <WebGLVisualizer
             frequency={frequency}
-            isPlaying={isPlaying}
+            isPlaying={isPlaying || isLibraryPlaying}
             waveType={waveType}
             analyserNode={analyserNode}
             visualStyle={visualStyle}
