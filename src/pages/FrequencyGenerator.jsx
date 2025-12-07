@@ -12,6 +12,7 @@ import BeatsControls from '../components/frequency/BeatsControls';
 import GestureController from '../components/frequency/GestureController';
 import MultiFrequencyLayers from '../components/frequency/MultiFrequencyLayers';
 import ArchiveLibrary from '../components/frequency/ArchiveLibrary';
+import PlaybackControls from '../components/frequency/PlaybackControls';
 import { base44 } from '@/api/base44Client';
 
 export default function FrequencyGenerator() {
@@ -71,6 +72,7 @@ export default function FrequencyGenerator() {
   const audioSourceRef = useRef(null);
   const [audioFile, setAudioFile] = useState(null);
   const [audioFileName, setAudioFileName] = useState('');
+  const [currentArchiveTrack, setCurrentArchiveTrack] = useState(null);
   const oscillatorRightRef = useRef(null);
   const pannerLeftRef = useRef(null);
   const pannerRightRef = useRef(null);
@@ -445,6 +447,7 @@ export default function FrequencyGenerator() {
       await audioElementRef.current.play();
       setIsPlaying(true);
       setAudioFileName(title);
+      setCurrentArchiveTrack({ url, title });
       
       // Auto fullscreen after 3 seconds
       fullscreenTimerRef.current = setTimeout(() => {
@@ -455,6 +458,21 @@ export default function FrequencyGenerator() {
       throw new Error(`Playback failed: ${error.message}`);
     }
   }, [isPlaying, stopOscillator, stopAudioFile, initAudio, enterFullscreen]);
+
+  const handleStopArchiveTrack = useCallback(() => {
+    if (audioElementRef.current) {
+      audioElementRef.current.pause();
+      audioElementRef.current.currentTime = 0;
+      audioElementRef.current.src = '';
+    }
+    setIsPlaying(false);
+    setCurrentArchiveTrack(null);
+    setAudioFileName('');
+    if (fullscreenTimerRef.current) {
+      clearTimeout(fullscreenTimerRef.current);
+      fullscreenTimerRef.current = null;
+    }
+  }, []);
 
   // Sync state when user exits fullscreen via Escape key
   useEffect(() => {
@@ -773,6 +791,17 @@ export default function FrequencyGenerator() {
             </Button>
           </motion.div>
         )}
+
+        {/* Playback Controls */}
+        <AnimatePresence>
+          {currentArchiveTrack && (
+            <PlaybackControls
+              audioElement={audioElementRef.current}
+              trackTitle={currentArchiveTrack.title}
+              onStop={handleStopArchiveTrack}
+            />
+          )}
+        </AnimatePresence>
 
         {/* Visual Controls Panel */}
         <AnimatePresence>
