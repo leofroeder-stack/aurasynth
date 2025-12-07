@@ -274,7 +274,7 @@ export default function FrequencyGenerator() {
 
   const togglePlay = useCallback(() => {
     if (isPlaying) {
-      if (audioFile) {
+      if (audioFile || currentArchiveTrack) {
         stopAudioFile();
       } else {
         stopOscillator();
@@ -287,7 +287,7 @@ export default function FrequencyGenerator() {
     } else {
       if (audioFile) {
         startAudioFile();
-      } else {
+      } else if (!currentArchiveTrack) {
         startOscillator();
       }
       // Auto fullscreen after 5 seconds
@@ -296,7 +296,7 @@ export default function FrequencyGenerator() {
       }, 5000);
     }
     setIsPlaying(!isPlaying);
-  }, [isPlaying, audioFile, startOscillator, stopOscillator, startAudioFile, stopAudioFile]);
+  }, [isPlaying, audioFile, currentArchiveTrack, startOscillator, stopOscillator, startAudioFile, stopAudioFile, enterFullscreen]);
 
   const handleFileUpload = useCallback((file) => {
     if (isPlaying) {
@@ -326,18 +326,18 @@ export default function FrequencyGenerator() {
 
   // Restart oscillator when beat settings change while playing
   useEffect(() => {
-    if (isPlaying && !audioFile) {
+    if (isPlaying && !audioFile && !currentArchiveTrack) {
       stopOscillator();
       startOscillator();
     }
-  }, [binauralEnabled, binauralFreq, isochronicEnabled, isochronicFreq, isochronicDepth]);
+  }, [binauralEnabled, binauralFreq, isochronicEnabled, isochronicFreq, isochronicDepth, isPlaying, audioFile, currentArchiveTrack, stopOscillator, startOscillator]);
 
   // Update layer oscillators when layers change while playing
   useEffect(() => {
-    if (isPlaying && !audioFile && audioContextRef.current) {
+    if (isPlaying && !audioFile && !currentArchiveTrack && audioContextRef.current) {
       startLayerOscillators(audioContextRef.current);
     }
-  }, [layers, isPlaying, audioFile, startLayerOscillators]);
+  }, [layers, isPlaying, audioFile, currentArchiveTrack, startLayerOscillators]);
 
   // Update volume in real-time
   useEffect(() => {
