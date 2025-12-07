@@ -15,6 +15,7 @@ import SoundscapeLibrary from './SoundscapeLibrary';
 import DynamicVisualSync from './DynamicVisualSync';
 import SoundscapeEditor from './SoundscapeEditor';
 import AudioExporter from './AudioExporter';
+import TherapySession from './TherapySession';
 
 export default function AudioControls({ 
   frequency, 
@@ -37,7 +38,8 @@ export default function AudioControls({
   audioContext,
   analyserNode,
   onApplyAIParameters,
-  currentSoundscapeParams
+  currentSoundscapeParams,
+  togglePlay
 }) {
   const [customFreqOpen, setCustomFreqOpen] = useState(false);
   const [customFreqValue, setCustomFreqValue] = useState('');
@@ -83,6 +85,12 @@ export default function AudioControls({
       {/* Top bar with Therapy on left, controls on right */}
       <div className="flex items-center justify-between -mt-2 flex-wrap gap-2">
         <div className="flex items-center gap-2">
+                            <TherapySession
+                              onApplyParameters={onApplyAIParameters || (() => {})}
+                              isPlaying={isPlaying}
+                              onTogglePlay={togglePlay}
+                              currentParameters={currentSoundscapeParams}
+                            />
                             <AISoundscapeGenerator
                               onApplyParameters={onApplyAIParameters || (() => {})}
                               isPlaying={isPlaying}

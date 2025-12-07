@@ -750,6 +750,7 @@ export default function FrequencyGenerator() {
                                               analyserNode={analyserRef.current}
                                               waveType={waveType}
                                               currentSoundscapeParams={currentSoundscapeParams}
+                                              togglePlay={togglePlay}
                                               minFreq={minFreq}
                                           maxFreq={maxFreq}
                                           onFileUpload={handleFileUpload}
