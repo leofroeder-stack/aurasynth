@@ -272,6 +272,61 @@ export default function FrequencyGenerator() {
 
   const fullscreenTimerRef = useRef(null);
 
+  // Handle browser fullscreen
+  const enterFullscreen = useCallback(() => {
+    setIsFullscreen(true);
+    // Set status bar color to black on mobile
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+      metaTheme.setAttribute('content', '#000000');
+    } else {
+      const meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      meta.content = '#000000';
+      document.head.appendChild(meta);
+    }
+    
+    // Ensure audio continues playing in fullscreen
+    setTimeout(() => {
+      // Resume audio context if suspended
+      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+        audioContextRef.current.resume();
+      }
+      // Resume main audio element if exists
+      if (audioElementRef.current && audioElementRef.current.paused && isPlaying) {
+        audioElementRef.current.play().catch(() => {});
+      }
+      // Resume all layer oscillators by restarting if playing
+      if (isPlaying && !audioFile && oscillatorRef.current) {
+        // Oscillators should continue playing automatically
+      }
+    }, 100);
+    
+    if (containerRef.current && document.fullscreenEnabled) {
+      containerRef.current.requestFullscreen().catch(() => {});
+    }
+  }, [isPlaying, audioFile]);
+
+  const exitFullscreen = useCallback(() => {
+    setIsFullscreen(false);
+    // Restore original theme color
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+      metaTheme.setAttribute('content', '#0a0a0f');
+    }
+    // Resume audio context if suspended
+    if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume();
+    }
+    // Resume audio element if exists
+    if (audioElementRef.current && audioElementRef.current.paused && isPlaying) {
+      audioElementRef.current.play().catch(() => {});
+    }
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, [isPlaying]);
+
   const togglePlay = useCallback(() => {
     if (isPlaying) {
       if (audioFile || currentArchiveTrack) {
@@ -355,61 +410,6 @@ export default function FrequencyGenerator() {
       oscillatorRef.current.type = waveType;
     }
   }, [waveType]);
-
-  // Handle browser fullscreen
-  const enterFullscreen = useCallback(() => {
-    setIsFullscreen(true);
-    // Set status bar color to black on mobile
-    const metaTheme = document.querySelector('meta[name="theme-color"]');
-    if (metaTheme) {
-      metaTheme.setAttribute('content', '#000000');
-    } else {
-      const meta = document.createElement('meta');
-      meta.name = 'theme-color';
-      meta.content = '#000000';
-      document.head.appendChild(meta);
-    }
-    
-    // Ensure audio continues playing in fullscreen
-    setTimeout(() => {
-      // Resume audio context if suspended
-      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-        audioContextRef.current.resume();
-      }
-      // Resume main audio element if exists
-      if (audioElementRef.current && audioElementRef.current.paused && isPlaying) {
-        audioElementRef.current.play().catch(() => {});
-      }
-      // Resume all layer oscillators by restarting if playing
-      if (isPlaying && !audioFile && oscillatorRef.current) {
-        // Oscillators should continue playing automatically
-      }
-    }, 100);
-    
-    if (containerRef.current && document.fullscreenEnabled) {
-      containerRef.current.requestFullscreen().catch(() => {});
-    }
-  }, [isPlaying, audioFile]);
-
-  const exitFullscreen = useCallback(() => {
-    setIsFullscreen(false);
-    // Restore original theme color
-    const metaTheme = document.querySelector('meta[name="theme-color"]');
-    if (metaTheme) {
-      metaTheme.setAttribute('content', '#0a0a0f');
-    }
-    // Resume audio context if suspended
-    if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-      audioContextRef.current.resume();
-    }
-    // Resume audio element if exists
-    if (audioElementRef.current && audioElementRef.current.paused && isPlaying) {
-      audioElementRef.current.play().catch(() => {});
-    }
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {});
-    }
-  }, [isPlaying]);
 
   const handlePlayArchiveTrack = useCallback(async (url, title) => {
     if (isPlaying) {
