@@ -38,8 +38,7 @@ export default function AudioControls({
   audioContext,
   analyserNode,
   onApplyAIParameters,
-  currentSoundscapeParams,
-  togglePlay
+  currentSoundscapeParams
 }) {
   const [customFreqOpen, setCustomFreqOpen] = useState(false);
   const [customFreqValue, setCustomFreqValue] = useState('');
