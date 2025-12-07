@@ -10,14 +10,20 @@ import { base44 } from '@/api/base44Client';
 
 export default function AISoundscapeGenerator({
   onApplyParameters,
-  isPlaying
+  isPlaying,
+  currentParameters,
+  onApplyVisualStyle
 }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [masteringLoading, setMasteringLoading] = useState(false);
+  const [visualGenLoading, setVisualGenLoading] = useState(false);
+  const [assistantLoading, setAssistantLoading] = useState(false);
   const [mood, setMood] = useState('');
   const [genre, setGenre] = useState('');
   const [description, setDescription] = useState('');
   const [lastGenerated, setLastGenerated] = useState(null);
+  const [assistantResponse, setAssistantResponse] = useState('');
 
   const moods = [
     { value: 'calm', label: '🧘 Calm & Peaceful' },
@@ -148,6 +154,177 @@ Return ONLY valid JSON with this exact structure:
     }
   };
 
+  const handleAutoMaster = async () => {
+    if (!currentParameters) {
+      alert('No audio parameters to master. Generate a soundscape first.');
+      return;
+    }
+    
+    setMasteringLoading(true);
+    try {
+      const prompt = `You are an expert audio mastering engineer. Analyze and optimize these audio parameters for the best listening experience:
+
+Current Settings:
+- Main Frequency: ${currentParameters.frequency} Hz
+- Volume: ${currentParameters.volume}
+- Wave Type: ${currentParameters.waveType}
+- Layers: ${currentParameters.layers ? currentParameters.layers.length : 0} layers
+- Speed: ${currentParameters.speed}
+- Intensity: ${currentParameters.intensity}
+
+Optimize for:
+1. Frequency balance - ensure no frequency masking or conflicts
+2. Loudness optimization - find the sweet spot for volume levels
+3. Harmonic richness - adjust layers for pleasant harmonics
+4. Dynamic range - balance intensity and bloom for depth
+
+Return optimized parameters in JSON with the same structure as input, including explanation of changes made.`;
+
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            mainFrequency: { type: "number" },
+            volume: { type: "number" },
+            intensity: { type: "number" },
+            complexity: { type: "number" },
+            bloom: { type: "number" },
+            layers: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  frequency: { type: "number" },
+                  volume: { type: "number" }
+                }
+              }
+            },
+            explanation: { type: "string" }
+          }
+        }
+      });
+
+      // Apply optimized parameters
+      onApplyParameters({
+        ...currentParameters,
+        mainFrequency: response.mainFrequency,
+        volume: response.volume,
+        intensity: response.intensity,
+        complexity: response.complexity,
+        bloom: response.bloom,
+        layers: response.layers.map((layer, idx) => ({
+          ...currentParameters.layers[idx],
+          frequency: layer.frequency,
+          volume: layer.volume
+        }))
+      });
+
+      setAssistantResponse(`✨ Mastering Complete: ${response.explanation}`);
+      
+    } catch (error) {
+      console.error('Auto-mastering failed:', error);
+      alert('Auto-mastering failed. Please try again.');
+    } finally {
+      setMasteringLoading(false);
+    }
+  };
+
+  const handleGenerateVisuals = async () => {
+    if (!currentParameters) {
+      alert('No audio playing. Generate a soundscape first.');
+      return;
+    }
+    
+    setVisualGenLoading(true);
+    try {
+      const prompt = `Based on these audio characteristics, suggest the perfect visual style and color palette:
+
+Audio Analysis:
+- Main Frequency: ${currentParameters.frequency} Hz (${currentParameters.frequency < 200 ? 'deep bass' : currentParameters.frequency < 600 ? 'low-mid' : currentParameters.frequency < 1200 ? 'mid' : 'high'})
+- Wave Type: ${currentParameters.waveType}
+- Complexity: ${currentParameters.complexity}
+- Intensity: ${currentParameters.intensity}
+- Has Layers: ${currentParameters.layers && currentParameters.layers.length > 0}
+
+Consider:
+- Low frequencies = flowing, organic visuals (liquid, nebula, aurora)
+- High frequencies = sharp, geometric visuals (geometric, electric, binary)
+- Complex waveforms = intricate patterns (fractal, mandala, chladni)
+- High intensity = energetic visuals with bright colors
+- Smooth waves = flowing visuals (plasma, waveform, tunnel)
+
+Available visual styles: fractal, tunnel, kaleidoscope, plasma, waveform, particles, geometric, spiral, matrix, nebula, rings, hexgrid, chladni, aurora, fireworks, mandala, liquid, electric, electrons, binary, seismograph
+
+Available color palettes: cyber, fire, nature, ocean, sunset, neon, aurora, lava, ice, candy, galaxy
+
+Return JSON with visualStyle, colorPalette, and explanation.`;
+
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            visualStyle: { type: "string" },
+            colorPalette: { type: "string" },
+            explanation: { type: "string" }
+          }
+        }
+      });
+
+      onApplyVisualStyle(response.visualStyle, response.colorPalette);
+      setAssistantResponse(`🎨 Visual Match: ${response.explanation}`);
+      
+    } catch (error) {
+      console.error('Visual generation failed:', error);
+      alert('Visual generation failed. Please try again.');
+    } finally {
+      setVisualGenLoading(false);
+    }
+  };
+
+  const handleAskAssistant = async () => {
+    if (!currentParameters) {
+      setAssistantResponse('No soundscape is currently active. Generate one first to get started!');
+      return;
+    }
+    
+    setAssistantLoading(true);
+    try {
+      const prompt = `You are a sound therapy and audio synthesis expert. Describe the current soundscape configuration and provide insights:
+
+Current Configuration:
+- Main Frequency: ${currentParameters.frequency} Hz
+- Wave Type: ${currentParameters.waveType}
+- Volume: ${currentParameters.volume}
+- Layers: ${currentParameters.layers ? JSON.stringify(currentParameters.layers) : 'none'}
+- Visual: ${currentParameters.visualStyle || 'not set'} with ${currentParameters.colorPalette || 'default'} palette
+- Binaural: ${currentParameters.binauralEnabled ? `Yes (${currentParameters.binauralFreq} Hz)` : 'No'}
+- Isochronic: ${currentParameters.isochronicEnabled ? `Yes (${currentParameters.isochronicFreq} Hz)` : 'No'}
+
+Provide:
+1. Description of what the user is hearing
+2. Therapeutic/wellness benefits
+3. Best use cases (meditation, focus, sleep, etc.)
+4. Suggestions for improvement
+5. Frequency healing properties if applicable
+
+Be conversational and insightful. Keep it under 200 words.`;
+
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt
+      });
+
+      setAssistantResponse(response);
+      
+    } catch (error) {
+      console.error('AI assistant failed:', error);
+      setAssistantResponse('Sorry, I encountered an error. Please try again.');
+    } finally {
+      setAssistantLoading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -214,6 +391,18 @@ Return ONLY valid JSON with this exact structure:
             />
           </div>
 
+          {/* AI Assistant Response */}
+          {assistantResponse && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3 max-h-48 overflow-y-auto"
+            >
+              <div className="text-xs text-cyan-300 font-medium mb-1">AI Assistant:</div>
+              <div className="text-xs text-gray-300 whitespace-pre-wrap">{assistantResponse}</div>
+            </motion.div>
+          )}
+
           {/* Last Generated Info */}
           {lastGenerated && (
             <motion.div
@@ -226,33 +415,85 @@ Return ONLY valid JSON with this exact structure:
             </motion.div>
           )}
 
-          {/* Generate Button */}
-          <Button
-            onClick={handleGenerate}
-            disabled={loading || (!mood && !genre && !description)}
-            className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 gap-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                Generate Soundscape
-              </>
-            )}
-          </Button>
+          {/* AI Tools Grid */}
+          <div className="grid grid-cols-2 gap-2">
+            {/* Generate Button */}
+            <Button
+              onClick={handleGenerate}
+              disabled={loading || (!mood && !genre && !description)}
+              className="col-span-2 bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Generate Soundscape
+                </>
+              )}
+            </Button>
+
+            {/* Auto Master */}
+            <Button
+              onClick={handleAutoMaster}
+              disabled={masteringLoading || !currentParameters}
+              variant="outline"
+              className="bg-white/5 border-white/10 text-white hover:bg-white/10 gap-2"
+            >
+              {masteringLoading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                '🎚️'
+              )}
+              <span className="text-xs">Auto Master</span>
+            </Button>
+
+            {/* Generate Visuals */}
+            <Button
+              onClick={handleGenerateVisuals}
+              disabled={visualGenLoading || !currentParameters}
+              variant="outline"
+              className="bg-white/5 border-white/10 text-white hover:bg-white/10 gap-2"
+            >
+              {visualGenLoading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                '🎨'
+              )}
+              <span className="text-xs">Match Visuals</span>
+            </Button>
+
+            {/* Ask AI Assistant */}
+            <Button
+              onClick={handleAskAssistant}
+              disabled={assistantLoading}
+              variant="outline"
+              className="col-span-2 bg-white/5 border-white/10 text-white hover:bg-white/10 gap-2"
+            >
+              {assistantLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  💬 Ask AI About This Soundscape
+                </>
+              )}
+            </Button>
+          </div>
 
           {isPlaying && (
             <p className="text-xs text-center text-amber-400">
-              ⚠️ Currently playing. Generated soundscape will apply when you restart.
+              ⚠️ Currently playing. Changes will apply when you restart.
             </p>
           )}
 
           <p className="text-xs text-center text-gray-500">
-            AI will create a unique audio configuration based on your preferences
+            AI-powered soundscape generation, mastering, and visual matching
           </p>
         </div>
       </DialogContent>
