@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Sparkles, Loader2, Wand2, Save } from "lucide-react";
+import { Sparkles, Loader2, Wand2, Save, Play } from "lucide-react";
 import { motion } from "framer-motion";
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -162,22 +162,23 @@ Return ONLY valid JSON with this exact structure:
   };
 
   const handleAutoMaster = async () => {
-    if (!currentParameters) {
-      alert('No audio parameters to master. Generate a soundscape first.');
+    if (!currentParameters?.frequency) {
+      setAssistantResponse('⚠️ No audio parameters to master. Generate a soundscape first.');
       return;
     }
     
     setMasteringLoading(true);
+    setAssistantResponse('');
     try {
       const prompt = `You are an expert audio mastering engineer. Analyze and optimize these audio parameters for the best listening experience:
 
 Current Settings:
 - Main Frequency: ${currentParameters.frequency} Hz
-- Volume: ${currentParameters.volume}
-- Wave Type: ${currentParameters.waveType}
-- Layers: ${currentParameters.layers ? currentParameters.layers.length : 0} layers
-- Speed: ${currentParameters.speed}
-- Intensity: ${currentParameters.intensity}
+- Volume: ${currentParameters.volume || 0.5}
+- Wave Type: ${currentParameters.waveType || 'sine'}
+- Layers: ${currentParameters.layers?.length || 0} layers
+- Speed: ${currentParameters.speed || 1}
+- Intensity: ${currentParameters.intensity || 1}
 
 Optimize for:
 1. Frequency balance - ensure no frequency masking or conflicts
@@ -213,25 +214,29 @@ Return optimized parameters in JSON with the same structure as input, including 
       });
 
       // Apply optimized parameters
-      onApplyParameters({
+      const optimizedParams = {
         ...currentParameters,
         mainFrequency: response.mainFrequency,
         volume: response.volume,
         intensity: response.intensity,
         complexity: response.complexity,
-        bloom: response.bloom,
-        layers: response.layers.map((layer, idx) => ({
-          ...currentParameters.layers[idx],
+        bloom: response.bloom
+      };
+
+      if (response.layers?.length > 0 && currentParameters.layers?.length > 0) {
+        optimizedParams.layers = response.layers.map((layer, idx) => ({
+          ...(currentParameters.layers[idx] || {}),
           frequency: layer.frequency,
           volume: layer.volume
-        }))
-      });
+        }));
+      }
 
+      onApplyParameters(optimizedParams);
       setAssistantResponse(`✨ Mastering Complete: ${response.explanation}`);
       
     } catch (error) {
       console.error('Auto-mastering failed:', error);
-      alert('Auto-mastering failed. Please try again.');
+      setAssistantResponse(`❌ Auto-mastering failed: ${error.message || 'Unknown error'}. Please try again.`);
     } finally {
       setMasteringLoading(false);
     }
@@ -334,7 +339,7 @@ Be conversational and insightful. Keep it under 200 words.`;
 
   const handleSaveSoundscape = async () => {
     if (!lastGenerated || !saveName.trim()) {
-      alert('Please enter a name for your soundscape');
+      setAssistantResponse('⚠️ Please enter a name for your soundscape');
       return;
     }
 
@@ -342,11 +347,11 @@ Be conversational and insightful. Keep it under 200 words.`;
     try {
       await base44.entities.SavedSoundscape.create({
         name: saveName.trim(),
-        mood: mood,
-        genre: genre,
-        description: description,
+        mood: mood || '',
+        genre: genre || '',
+        description: description || '',
         parameters: lastGenerated,
-        explanation: lastGenerated.explanation
+        explanation: lastGenerated.explanation || ''
       });
 
       queryClient.invalidateQueries({ queryKey: ['saved-soundscapes'] });
@@ -355,9 +360,16 @@ Be conversational and insightful. Keep it under 200 words.`;
       setSaveName('');
     } catch (error) {
       console.error('Failed to save soundscape:', error);
-      alert('Failed to save soundscape. Please try again.');
+      setAssistantResponse(`❌ Failed to save: ${error.message || 'Unknown error'}. Please try again.`);
     } finally {
       setSaveLoading(false);
+    }
+  };
+
+  const handlePreview = () => {
+    if (lastGenerated) {
+      onApplyParameters(lastGenerated);
+      setAssistantResponse('▶️ Preview started! The soundscape is now playing.');
     }
   };
 
@@ -471,6 +483,18 @@ Be conversational and insightful. Keep it under 200 words.`;
                 </>
               )}
             </Button>
+
+            {/* Preview Button */}
+            {lastGenerated && (
+              <Button
+                onClick={handlePreview}
+                disabled={loading}
+                className="col-span-2 bg-green-600 hover:bg-green-700 gap-2"
+              >
+                <Play className="w-4 h-4" />
+                Preview Soundscape
+              </Button>
+            )}
 
             {/* Auto Master */}
             <Button
