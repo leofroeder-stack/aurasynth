@@ -13,6 +13,8 @@ import BackgroundAudioMixer from './BackgroundAudioMixer';
 import AISoundscapeGenerator from './AISoundscapeGenerator';
 import SoundscapeLibrary from './SoundscapeLibrary';
 import DynamicVisualSync from './DynamicVisualSync';
+import SoundscapeEditor from './SoundscapeEditor';
+import AudioExporter from './AudioExporter';
 
 export default function AudioControls({ 
   frequency, 
@@ -34,7 +36,8 @@ export default function AudioControls({
   onApplyVisualStyle,
   audioContext,
   analyserNode,
-  onApplyAIParameters
+  onApplyAIParameters,
+  currentSoundscapeParams
 }) {
   const [customFreqOpen, setCustomFreqOpen] = useState(false);
   const [customFreqValue, setCustomFreqValue] = useState('');
@@ -116,6 +119,16 @@ export default function AudioControls({
                                 currentWaveType={waveType}
                               />
                             </div>
+                            <SoundscapeEditor
+                              currentParameters={currentSoundscapeParams}
+                              onApplyChanges={onApplyAIParameters || (() => {})}
+                              isPlaying={isPlaying}
+                            />
+                            <AudioExporter
+                              audioContext={audioContext}
+                              currentParameters={currentSoundscapeParams}
+                              isPlaying={isPlaying}
+                            />
                             <TherapyFrequencyPicker onSelectFrequency={setFrequency} />
                             <AmbientAnalyzer 
                               onApplyFrequency={setFrequency} 

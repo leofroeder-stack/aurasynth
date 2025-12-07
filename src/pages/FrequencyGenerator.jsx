@@ -50,6 +50,7 @@ export default function FrequencyGenerator() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef(null);
   const [analyserNode, setAnalyserNode] = useState(null);
+  const [currentSoundscapeParams, setCurrentSoundscapeParams] = useState(null);
   
   // Touch interaction state
   const [touchPoints, setTouchPoints] = useState([]);
@@ -721,32 +722,34 @@ export default function FrequencyGenerator() {
                                                 setColorPalette(palette);
                                               }}
                                               onApplyAIParameters={(params) => {
-                                                setFrequency(params.mainFrequency);
-                                                setVolume(params.volume);
-                                                setWaveType(params.waveType);
-                                                setLayers(params.layers.map((layer, idx) => ({
-                                                  id: Date.now() + idx,
-                                                  frequency: layer.frequency,
-                                                  volume: layer.volume,
-                                                  waveType: layer.waveType,
-                                                  enabled: true
-                                                })));
-                                                setVisualStyle(params.visualStyle);
-                                                setColorPalette(params.colorPalette);
-                                                setSpeed(params.speed);
-                                                setIntensity(params.intensity);
-                                                setComplexity(params.complexity);
-                                                setSymmetry(params.symmetry);
-                                                setBloom(params.bloom);
-                                                setBinauralEnabled(params.binaural.enabled);
-                                                setBinauralFreq(params.binaural.frequency);
-                                                setIsochronicEnabled(params.isochronic.enabled);
-                                                setIsochronicFreq(params.isochronic.frequency);
-                                                setIsochronicDepth(params.isochronic.depth);
-                                              }}
+                                                      setFrequency(params.mainFrequency || params.frequency);
+                                                      setVolume(params.volume);
+                                                      setWaveType(params.waveType);
+                                                      setLayers((params.layers || []).map((layer, idx) => ({
+                                                        id: Date.now() + idx,
+                                                        frequency: layer.frequency,
+                                                        volume: layer.volume,
+                                                        waveType: layer.waveType,
+                                                        enabled: layer.enabled !== false
+                                                      })));
+                                                      setVisualStyle(params.visualStyle || visualStyle);
+                                                      setColorPalette(params.colorPalette || colorPalette);
+                                                      setSpeed(params.speed || 1);
+                                                      setIntensity(params.intensity || 1);
+                                                      setComplexity(params.complexity || 1);
+                                                      setSymmetry(params.symmetry || 4);
+                                                      setBloom(params.bloom || 0.5);
+                                                      setBinauralEnabled(params.binauralEnabled || params.binaural?.enabled || false);
+                                                      setBinauralFreq(params.binauralFreq || params.binaural?.frequency || 10);
+                                                      setIsochronicEnabled(params.isochronicEnabled || params.isochronic?.enabled || false);
+                                                      setIsochronicFreq(params.isochronicFreq || params.isochronic?.frequency || 10);
+                                                      setIsochronicDepth(params.isochronicDepth || params.isochronic?.depth || 0.8);
+                                                      setCurrentSoundscapeParams(params);
+                                                    }}
                                               audioContext={audioContextRef.current}
                                               analyserNode={analyserRef.current}
                                               waveType={waveType}
+                                              currentSoundscapeParams={currentSoundscapeParams}
                                               minFreq={minFreq}
                                           maxFreq={maxFreq}
                                           onFileUpload={handleFileUpload}
