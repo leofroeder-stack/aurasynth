@@ -32,8 +32,8 @@ export default function FrequencyGenerator() {
   }, []);
   const [frequency, setFrequency] = useState(440);
   const [layers, setLayers] = useState([]); // Additional frequency layers
-  const [minFreq, setMinFreq] = useState(20);
-  const [maxFreq, setMaxFreq] = useState(20000);
+  const [minFreq, setMinFreq] = useState(-20000);
+  const [maxFreq, setMaxFreq] = useState(100000);
   const [volume, setVolume] = useState(0.5);
   const [waveType, setWaveType] = useState('sine');
   const [isPlaying, setIsPlaying] = useState(false);

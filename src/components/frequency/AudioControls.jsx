@@ -16,6 +16,7 @@ import DynamicVisualSync from './DynamicVisualSync';
 import SoundscapeEditor from './SoundscapeEditor';
 import AudioExporter from './AudioExporter';
 import TherapySession from './TherapySession';
+import FrequencyTester from './FrequencyTester';
 
 export default function AudioControls({ 
   frequency, 
@@ -29,8 +30,8 @@ export default function AudioControls({
   onHidePanel,
   onOpenVisuals,
   onFullscreen,
-  minFreq = 20,
-  maxFreq = 20000,
+  minFreq = -20000,
+  maxFreq = 100000,
   recordingControls,
   onFileUpload,
   audioFileName,
@@ -84,6 +85,10 @@ export default function AudioControls({
       {/* Top bar with Therapy on left, controls on right */}
       <div className="flex items-center justify-between -mt-2 flex-wrap gap-2">
         <div className="flex items-center gap-2">
+                            <FrequencyTester
+                              onSetFrequency={setFrequency}
+                              currentFrequency={frequency}
+                            />
                             <TherapySession
                               onApplyParameters={onApplyAIParameters || (() => {})}
                               isPlaying={isPlaying}
@@ -221,13 +226,11 @@ export default function AudioControls({
               <div className="space-y-4 pt-4">
                 <Input
                   type="number"
-                  placeholder="Enter frequency (20-20000 Hz)"
+                  placeholder={`Enter frequency (${minFreq}-${maxFreq} Hz)`}
                   value={customFreqValue}
                   onChange={(e) => setCustomFreqValue(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleCustomFreqSubmit()}
                   className="bg-white/5 border-white/10 text-white text-lg"
-                  min={20}
-                  max={20000}
                 />
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setCustomFreqOpen(false)} className="border-white/10 text-gray-300">
@@ -243,18 +246,18 @@ export default function AudioControls({
         </div>
       </motion.div>
 
-      {/* Frequency Slider - Logarithmic scale for better control */}
+      {/* Frequency Slider - Handle negative and positive ranges */}
       <div className="space-y-3">
         <div className="flex justify-between text-sm text-gray-400">
-          <span>{minFreq} Hz</span>
+          <span>{minFreq >= 1000 ? `${minFreq/1000}k` : minFreq} Hz</span>
           <span>{maxFreq >= 1000 ? `${maxFreq/1000}k` : maxFreq} Hz</span>
         </div>
         <Slider
-          value={[Math.log10(frequency)]}
-          onValueChange={([val]) => setFrequency(Math.round(Math.pow(10, val) * 10) / 10)}
-          min={Math.log10(minFreq)}
-          max={Math.log10(maxFreq)}
-          step={0.001}
+          value={[frequency]}
+          onValueChange={([val]) => setFrequency(Math.round(val * 10) / 10)}
+          min={minFreq}
+          max={maxFreq}
+          step={0.1}
           className="w-full"
         />
       </div>
