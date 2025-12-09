@@ -17,6 +17,7 @@ import SoundscapeEditor from './SoundscapeEditor';
 import AudioExporter from './AudioExporter';
 import TherapySession from './TherapySession';
 import FrequencyTester from './FrequencyTester';
+import FrequencyWarning from './FrequencyWarning';
 
 export default function AudioControls({ 
   frequency, 
@@ -188,6 +189,9 @@ export default function AudioControls({
         </div>
       </div>
       
+      {/* Health Warning */}
+      <FrequencyWarning frequency={frequency} volume={volume} />
+
       {/* Main Frequency Display */}
       <motion.div 
         className="text-center"
