@@ -527,6 +527,76 @@ export default function FrequencyGenerator() {
     }
   }, [isPlaying, togglePlay]);
 
+  // Keep audio playing in background
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && isPlaying && audioContextRef.current) {
+        // Resume audio context if suspended
+        if (audioContextRef.current.state === 'suspended') {
+          audioContextRef.current.resume();
+        }
+        // Resume audio element if exists
+        if (audioElementRef.current && audioElementRef.current.paused) {
+          audioElementRef.current.play().catch(() => {});
+        }
+      }
+    };
+
+    const handleFocus = () => {
+      if (isPlaying && audioContextRef.current) {
+        // Resume audio context when tab regains focus
+        if (audioContextRef.current.state === 'suspended') {
+          audioContextRef.current.resume();
+        }
+        // Resume audio element if exists
+        if (audioElementRef.current && audioElementRef.current.paused) {
+          audioElementRef.current.play().catch(() => {});
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [isPlaying]);
+
+  // Request wake lock to prevent device from sleeping during playback
+  useEffect(() => {
+    let wakeLock = null;
+
+    const requestWakeLock = async () => {
+      if ('wakeLock' in navigator && isPlaying) {
+        try {
+          wakeLock = await navigator.wakeLock.request('screen');
+        } catch (err) {
+          console.log('Wake Lock error:', err);
+        }
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (wakeLock !== null && document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    };
+
+    if (isPlaying) {
+      requestWakeLock();
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
+    return () => {
+      if (wakeLock !== null) {
+        wakeLock.release();
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isPlaying]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
