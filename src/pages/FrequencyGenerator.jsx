@@ -956,6 +956,7 @@ export default function FrequencyGenerator() {
           )}
         </AnimatePresence>
       </div>
+      </div>
     </div>
   );
 }
