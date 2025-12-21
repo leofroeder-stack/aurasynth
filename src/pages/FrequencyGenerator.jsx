@@ -13,10 +13,12 @@ import GestureController from '../components/frequency/GestureController';
 import MultiFrequencyLayers from '../components/frequency/MultiFrequencyLayers';
 import ArchiveLibrary from '../components/frequency/ArchiveLibrary';
 import PlaybackControls from '../components/frequency/PlaybackControls';
+import Sidebar from '../components/Sidebar';
 import { base44 } from '@/api/base44Client';
 
 export default function FrequencyGenerator() {
   const [currentUser, setCurrentUser] = React.useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   React.useEffect(() => {
     base44.auth.me().then(user => {
@@ -693,7 +695,12 @@ export default function FrequencyGenerator() {
   }, []);
 
   return (
-    <div ref={containerRef} className={`min-h-screen text-white overflow-hidden relative ${isFullscreen ? 'bg-black' : 'bg-[#0a0a0f]'}`} style={isFullscreen ? { paddingTop: 'env(safe-area-inset-top)', backgroundColor: '#000000' } : undefined}>
+    <div className="flex h-screen overflow-hidden">
+      {/* Sidebar */}
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      {/* Main Content */}
+      <div ref={containerRef} className={`flex-1 min-h-screen text-white overflow-hidden relative ${isFullscreen ? 'bg-black' : 'bg-[#0a0a0f]'}`} style={isFullscreen ? { paddingTop: 'env(safe-area-inset-top)', backgroundColor: '#000000' } : undefined}>
       {/* Fullscreen frequency control overlay */}
       {isFullscreen && (
         <FrequencyOverlay 
@@ -764,9 +771,12 @@ export default function FrequencyGenerator() {
               className="p-6 md:p-8"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-fuchsia-500 flex items-center justify-center">
+                <button 
+                  onClick={() => setSidebarOpen(true)}
+                  className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-fuchsia-500 flex items-center justify-center hover:scale-105 transition-transform lg:cursor-default lg:hover:scale-100"
+                >
                   <span className="text-xl">∿</span>
-                </div>
+                </button>
                 <div>
                   <h1 className="text-xl font-light tracking-wide">Frequency Generator</h1>
                   <p className="text-xs text-gray-500">Audio synthesis with WebGL visualization</p>
