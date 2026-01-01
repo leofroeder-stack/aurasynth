@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import TherapyFrequencyPicker from './TherapyFrequencyPicker';
 import AmbientAnalyzer from './AmbientAnalyzer';
 import AudioInputControls from './AudioInputControls';
+import MicrophoneChladni from './MicrophoneChladni';
 import BackgroundAudioMixer from './BackgroundAudioMixer';
 import AISoundscapeGenerator from './AISoundscapeGenerator';
 import SoundscapeLibrary from './SoundscapeLibrary';
@@ -148,6 +149,7 @@ export default function AudioControls({
                               onApplyVisualStyle={onApplyVisualStyle || (() => {})} 
                             />
                             <AudioInputControls />
+                            <MicrophoneChladni />
                             <BackgroundAudioMixer 
                               audioContext={audioContext}
                               destinationNode={analyserNode}
