@@ -86,7 +86,7 @@ export default function AudioControls({
     <div className="space-y-8 relative">
       {/* Top bar with Therapy on left, controls on right */}
       <div className="flex items-center justify-between -mt-2 flex-wrap gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 flex-wrap">
                             <FrequencyTester
                               onSetFrequency={setFrequency}
                               currentFrequency={frequency}
@@ -157,7 +157,7 @@ export default function AudioControls({
                             />
                           </div>
 
-        <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+        <div className="flex items-center gap-1 md:gap-2 flex-wrap">
           {onOpenVisuals && (
             <Button
               variant="ghost"
