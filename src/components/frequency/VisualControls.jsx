@@ -45,8 +45,9 @@ export default function VisualControls({
       { value: 'electrons', label: 'Electrons', icon: '⚛' },
       { value: 'binary', label: 'Binary Notes', icon: '01' },
       { value: 'seismograph', label: 'Seismograph', icon: '〰️' },
+      { value: 'cymatics', label: 'Cymatics', icon: '💧' },
       { value: 'ai-imagination', label: 'AI Mind', icon: '🧠' },
-    ];
+      ];
 
   const colorPalettes = [
                 { value: 'cyber', label: 'Cyber', colors: ['#00f0ff', '#ff00aa', '#7b00ff'] },

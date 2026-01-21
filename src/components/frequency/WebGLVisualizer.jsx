@@ -998,6 +998,124 @@ export default function WebGLVisualizer({
                                 return col;
                               }
             
+            vec3 styleCymatics(vec2 uv, float time, float freqNorm, float audioSum) {
+              // Cymatics - water surface vibration patterns
+              vec3 col = vec3(0.0);
+              float f = freqNorm * 4.0;
+              
+              // Extract frequency bands
+              float bass = 0.0;
+              float mid = 0.0;
+              float high = 0.0;
+              for (int i = 0; i < 32; i++) {
+                if (i < 10) bass += u_audioData[i];
+                else if (i < 20) mid += u_audioData[i];
+                else high += u_audioData[i];
+              }
+              bass /= 10.0;
+              mid /= 10.0;
+              high /= 12.0;
+              
+              // Water surface parameters
+              float radius = length(uv);
+              float angle = atan(uv.y, uv.x);
+              
+              // Multiple wave sources creating interference patterns
+              vec2 sources[5];
+              sources[0] = vec2(0.0, 0.0); // Center
+              sources[1] = vec2(cos(time * u_speed * 0.3 + bass * 5.0) * 0.5, sin(time * u_speed * 0.3) * 0.5);
+              sources[2] = vec2(cos(time * u_speed * 0.5 + 2.0 + mid * 4.0) * 0.6, sin(time * u_speed * 0.5 + 2.0) * 0.6);
+              sources[3] = vec2(cos(time * u_speed * 0.7 + 4.0 + high * 6.0) * 0.4, sin(time * u_speed * 0.7 + 4.0) * 0.4);
+              sources[4] = vec2(cos(angle * 3.0 + time) * 0.3, sin(angle * 3.0 + time) * 0.3);
+              
+              float waveHeight = 0.0;
+              
+              // Create interference from multiple sources
+              for (int i = 0; i < 5; i++) {
+                vec2 toSource = uv - sources[i];
+                float dist = length(toSource);
+                
+                // Frequency determines wave number
+                float waveNumber = 5.0 + f * 15.0 + float(i) * 2.0;
+                
+                // Different frequency bands control different sources
+                float amplitude = 0.0;
+                if (i < 2) amplitude = bass * 0.8 + audioSum * 0.4;
+                else if (i < 4) amplitude = mid * 0.7 + audioSum * 0.3;
+                else amplitude = high * 0.6 + audioSum * 0.3;
+                
+                // Wave equation with audio modulation
+                float wave = sin(dist * waveNumber * u_complexity - time * u_speed * (2.0 + f * 3.0) + float(i)) * amplitude;
+                wave += cos(dist * waveNumber * 0.5 * u_complexity + time * u_speed * (1.5 + f * 2.0)) * amplitude * 0.5;
+                
+                waveHeight += wave;
+              }
+              
+              // Circular standing wave patterns
+              float standingWave = sin(radius * (10.0 + f * 30.0) * u_complexity) * cos(angle * u_symmetry + time * u_speed);
+              standingWave *= (bass * 0.5 + mid * 0.3 + high * 0.2);
+              waveHeight += standingWave * 0.6;
+              
+              // Nodal lines (where waves cancel out)
+              float nodalPattern = abs(waveHeight);
+              float waterSurface = 1.0 - smoothstep(0.0, 0.3 + audioSum * 0.4, nodalPattern);
+              
+              // Water color with depth
+              vec3 deepWater = vec3(0.0, 0.1, 0.3);
+              vec3 shallowWater = getColor(f + time * 0.1 + audioSum);
+              vec3 waterColor = mix(deepWater, shallowWater, waterSurface);
+              
+              // Add wave crests (white foam)
+              float crest = smoothstep(0.7 - audioSum * 0.3, 1.0, abs(waveHeight));
+              waterColor += vec3(1.0) * crest * u_intensity * (0.8 + audioSum * 0.5);
+              
+              // Caustics effect (light refraction)
+              vec2 refractUV = uv + vec2(waveHeight * 0.1);
+              float caustic = sin(refractUV.x * 20.0 + time * 2.0) * sin(refractUV.y * 20.0 - time * 2.0);
+              caustic = pow(max(0.0, caustic), 3.0);
+              waterColor += getColor(time * 0.3 + f) * caustic * 0.3 * u_bloom * (1.0 + audioSum);
+              
+              // Ripple highlights
+              for (int i = 0; i < 5; i++) {
+                vec2 toSource = uv - sources[i];
+                float dist = length(toSource);
+                float ripple = sin(dist * (15.0 + f * 20.0) - time * u_speed * 4.0 + float(i) * 1.5) * 0.5 + 0.5;
+                ripple *= exp(-dist * (2.0 - f * 0.5));
+                ripple *= smoothstep(1.5, 0.3, dist);
+                
+                float rippleIntensity = 0.0;
+                if (i < 2) rippleIntensity = bass;
+                else if (i < 4) rippleIntensity = mid;
+                else rippleIntensity = high;
+                
+                waterColor += getColor(float(i) * 0.2 + f + time * 0.1) * ripple * rippleIntensity * 0.4;
+              }
+              
+              // Specular highlights (sun reflection)
+              vec3 normal = normalize(vec3(waveHeight * 2.0, waveHeight, 1.0 - abs(waveHeight)));
+              vec3 lightDir = normalize(vec3(0.5, 0.8, 1.0));
+              float specular = pow(max(0.0, dot(normal, lightDir)), 8.0 + audioSum * 20.0);
+              waterColor += vec3(1.0, 1.0, 0.95) * specular * u_intensity * (0.5 + audioSum);
+              
+              // Depth gradient
+              float depthFade = 1.0 - smoothstep(0.0, 1.5, radius);
+              waterColor *= depthFade;
+              
+              // Surface tension waves (high frequency detail)
+              float tension = sin(uv.x * (40.0 + high * 60.0) + time * 5.0) * sin(uv.y * (40.0 + high * 60.0) - time * 5.0);
+              tension *= high * 0.2 * exp(-radius * 2.0);
+              waterColor += vec3(0.8, 0.9, 1.0) * tension;
+              
+              // Add particle suspension in water
+              float particles = hash(uv * (50.0 + audioSum * 100.0) + time * 0.5);
+              particles = smoothstep(0.97 - audioSum * 0.1, 1.0, particles);
+              waterColor += getColor(particles + time * 0.2) * particles * 0.3;
+              
+              col = waterColor * u_intensity;
+              
+              return col;
+            }
+            
             vec3 styleChladni(vec2 uv, float time, float freqNorm, float audioSum) {
               // Animated Chladni plate simulation - sand patterns on vibrating metal
               vec3 col = vec3(0.0);
@@ -1194,8 +1312,10 @@ export default function WebGLVisualizer({
                                                                                                             finalColor = styleElectrons(uv, time, freqNorm, audioSum);
                                                                                                           } else if (u_visualStyle == 19) {
                                                                                                             finalColor = styleBinary(uv, time, freqNorm, audioSum);
-                                                                                                          } else {
+                                                                                                          } else if (u_visualStyle == 20) {
                                                                                                             finalColor = styleSeismograph(uv, time, freqNorm, audioSum);
+                                                                                                          } else {
+                                                                                                            finalColor = styleCymatics(uv, time, freqNorm, audioSum);
                                                                                                           }
         
         // Enhanced glow with stronger frequency and amplitude response
@@ -1370,7 +1490,7 @@ export default function WebGLVisualizer({
           const dragVelocityLocation = gl.getUniformLocation(program, 'u_dragVelocity');
 
           const waveTypes = { sine: 0, square: 1, sawtooth: 2, triangle: 3 };
-    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12, aurora: 13, fireworks: 14, mandala: 15, liquid: 16, electric: 17, electrons: 18, binary: 19, seismograph: 20 };
+    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12, aurora: 13, fireworks: 14, mandala: 15, liquid: 16, electric: 17, electrons: 18, binary: 19, seismograph: 20, cymatics: 21 };
           const colorPalettes = { cyber: 0, fire: 1, nature: 2, ocean: 3, sunset: 4, neon: 5, aurora: 6, lava: 7, ice: 8, candy: 9, galaxy: 10 };
 
     const render = () => {
