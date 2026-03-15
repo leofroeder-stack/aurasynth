@@ -46,6 +46,9 @@ export default function VisualControls({
       { value: 'binary', label: 'Binary Notes', icon: '01' },
       { value: 'seismograph', label: 'Seismograph', icon: '〰️' },
       { value: 'cymatics', label: 'Cymatics', icon: '💧' },
+      { value: 'chladni-polar', label: 'Chladni Polar', icon: '◎' },
+      { value: 'chladni-3d', label: 'Chladni 3D', icon: '⬡' },
+      { value: 'chladni-storm', label: 'Chladni Storm', icon: '⚡' },
       { value: 'ai-imagination', label: 'AI Mind', icon: '🧠' },
       ];
 

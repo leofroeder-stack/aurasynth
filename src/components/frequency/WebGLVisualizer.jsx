@@ -1314,8 +1314,14 @@ export default function WebGLVisualizer({
                                                                                                             finalColor = styleBinary(uv, time, freqNorm, audioSum);
                                                                                                           } else if (u_visualStyle == 20) {
                                                                                                             finalColor = styleSeismograph(uv, time, freqNorm, audioSum);
-                                                                                                          } else {
+                                                                                                          } else if (u_visualStyle == 21) {
                                                                                                             finalColor = styleCymatics(uv, time, freqNorm, audioSum);
+                                                                                                          } else if (u_visualStyle == 22) {
+                                                                                                            finalColor = styleChladniPolar(uv, time, freqNorm, audioSum);
+                                                                                                          } else if (u_visualStyle == 23) {
+                                                                                                            finalColor = styleChladni3D(uv, time, freqNorm, audioSum);
+                                                                                                          } else {
+                                                                                                            finalColor = styleChladniStorm(uv, time, freqNorm, audioSum);
                                                                                                           }
         
         // Enhanced glow with stronger frequency and amplitude response
@@ -1490,7 +1496,7 @@ export default function WebGLVisualizer({
           const dragVelocityLocation = gl.getUniformLocation(program, 'u_dragVelocity');
 
           const waveTypes = { sine: 0, square: 1, sawtooth: 2, triangle: 3 };
-    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12, aurora: 13, fireworks: 14, mandala: 15, liquid: 16, electric: 17, electrons: 18, binary: 19, seismograph: 20, cymatics: 21 };
+    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12, aurora: 13, fireworks: 14, mandala: 15, liquid: 16, electric: 17, electrons: 18, binary: 19, seismograph: 20, cymatics: 21, 'chladni-polar': 22, 'chladni-3d': 23, 'chladni-storm': 24 };
           const colorPalettes = { cyber: 0, fire: 1, nature: 2, ocean: 3, sunset: 4, neon: 5, aurora: 6, lava: 7, ice: 8, candy: 9, galaxy: 10 };
 
     const render = () => {
