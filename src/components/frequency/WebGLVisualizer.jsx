@@ -1249,6 +1249,55 @@ export default function WebGLVisualizer({
         return col;
       }
 
+      vec3 styleChladniClassic(vec2 uv, float time, float freqNorm, float audioSum) {
+        // Pure Chladni plate - fixed mode numbers from frequency, no pulsing
+        vec3 col = vec3(0.0);
+
+        // Fixed mode numbers derived purely from frequency — no audio-reactive drift
+        float m = u_frequency / 150.0;
+        float n = u_frequency / 180.0;
+
+        // Scale UV to plate coordinates, very slow rotation only
+        vec2 p = uv * (2.0 + u_complexity);
+        float rotation = time * u_speed * 0.04;
+        p = vec2(p.x * cos(rotation) - p.y * sin(rotation),
+                 p.x * sin(rotation) + p.y * cos(rotation));
+
+        // Classic Chladni equation — no phase animation, no beat influence
+        float chladni = cos(m * PI * p.x) * cos(n * PI * p.y)
+                      - cos(n * PI * p.x) * cos(m * PI * p.y);
+
+        // Second harmonic at fixed ratio
+        float m2 = m * 1.5;
+        float n2 = n * 1.5;
+        float chladni2 = cos(m2 * PI * p.x) * cos(n2 * PI * p.y)
+                       - cos(n2 * PI * p.x) * cos(m2 * PI * p.y);
+
+        float pattern = chladni * 0.7 + chladni2 * 0.3;
+
+        // Sharp nodal lines — sand stays put
+        float sand = 1.0 - smoothstep(0.0, 0.07, abs(pattern));
+
+        // Static grain texture
+        float grain = hash(p * 90.0) * 0.18;
+        sand = clamp(sand + grain * sand, 0.0, 1.0);
+
+        // Neutral plate and warm sand colors
+        vec3 plateColor = vec3(0.1, 0.12, 0.16);
+        vec3 sandColor = mix(vec3(0.88, 0.82, 0.65), getColor(freqNorm * 1.5), 0.25);
+
+        col = mix(plateColor, sandColor, sand * u_intensity);
+
+        // Subtle glow only on nodal lines, no center bloom
+        float glow = exp(-abs(pattern) * 4.0) * u_bloom * 0.5;
+        col += getColor(freqNorm + time * 0.05) * glow;
+
+        // Hard plate border
+        col *= smoothstep(1.5, 1.35, length(uv));
+
+        return col;
+      }
+
             vec3 styleChladni(vec2 uv, float time, float freqNorm, float audioSum) {
               // Animated Chladni plate simulation - sand patterns on vibrating metal
               vec3 col = vec3(0.0);
@@ -1453,8 +1502,10 @@ export default function WebGLVisualizer({
                                                                                                             finalColor = styleChladniPolar(uv, time, freqNorm, audioSum);
                                                                                                           } else if (u_visualStyle == 23) {
                                                                                                             finalColor = styleChladni3D(uv, time, freqNorm, audioSum);
-                                                                                                          } else {
+                                                                                                          } else if (u_visualStyle == 24) {
                                                                                                             finalColor = styleChladniStorm(uv, time, freqNorm, audioSum);
+                                                                                                          } else {
+                                                                                                            finalColor = styleChladniClassic(uv, time, freqNorm, audioSum);
                                                                                                           }
         
         // Enhanced glow with stronger frequency and amplitude response
@@ -1629,7 +1680,7 @@ export default function WebGLVisualizer({
           const dragVelocityLocation = gl.getUniformLocation(program, 'u_dragVelocity');
 
           const waveTypes = { sine: 0, square: 1, sawtooth: 2, triangle: 3 };
-    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12, aurora: 13, fireworks: 14, mandala: 15, liquid: 16, electric: 17, electrons: 18, binary: 19, seismograph: 20, cymatics: 21, 'chladni-polar': 22, 'chladni-3d': 23, 'chladni-storm': 24 };
+    const visualStyles = { fractal: 0, tunnel: 1, kaleidoscope: 2, plasma: 3, waveform: 4, particles: 5, geometric: 6, spiral: 7, matrix: 8, nebula: 9, rings: 10, hexgrid: 11, chladni: 12, aurora: 13, fireworks: 14, mandala: 15, liquid: 16, electric: 17, electrons: 18, binary: 19, seismograph: 20, cymatics: 21, 'chladni-polar': 22, 'chladni-3d': 23, 'chladni-storm': 24, 'chladni-classic': 25 };
           const colorPalettes = { cyber: 0, fire: 1, nature: 2, ocean: 3, sunset: 4, neon: 5, aurora: 6, lava: 7, ice: 8, candy: 9, galaxy: 10 };
 
     const render = () => {
