@@ -49,6 +49,7 @@ export default function VisualControls({
       { value: 'chladni-polar', label: 'Chladni Polar', icon: '◎' },
       { value: 'chladni-3d', label: 'Chladni 3D', icon: '⬡' },
       { value: 'chladni-storm', label: 'Chladni Storm', icon: '⚡' },
+      { value: 'chladni-classic', label: 'Chladni Classic', icon: '▣' },
       { value: 'ai-imagination', label: 'AI Mind', icon: '🧠' },
       ];
 
