@@ -1,0 +1,37 @@
+{
+  "name": "ArchiveTrack",
+  "type": "object",
+  "properties": {
+    "url": {
+      "type": "string",
+      "description": "Archive.org direct audio file URL"
+    },
+    "title": {
+      "type": "string",
+      "description": "Track title"
+    },
+    "artist": {
+      "type": "string",
+      "description": "Artist name"
+    },
+    "album": {
+      "type": "string",
+      "description": "Album name"
+    },
+    "duration": {
+      "type": "number",
+      "description": "Duration in seconds"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags for categorization"
+    }
+  },
+  "required": [
+    "url",
+    "title"
+  ]
+}

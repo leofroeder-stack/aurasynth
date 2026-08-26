@@ -1,0 +1,64 @@
+{
+  "name": "TherapySession",
+  "type": "object",
+  "properties": {
+    "goal": {
+      "type": "string",
+      "description": "Therapeutic goal (stress_reduction, focus, sleep, anxiety_relief, meditation, energy_boost, creativity, pain_relief)"
+    },
+    "duration": {
+      "type": "number",
+      "description": "Session duration in minutes"
+    },
+    "start_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Session start timestamp"
+    },
+    "end_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Session end timestamp"
+    },
+    "parameters_history": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Array of parameter changes during session"
+    },
+    "feedback": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "User feedback collected during session"
+    },
+    "effectiveness_rating": {
+      "type": "number",
+      "description": "User rating 1-5 of session effectiveness"
+    },
+    "ai_summary": {
+      "type": "string",
+      "description": "AI-generated session summary"
+    },
+    "ai_recommendations": {
+      "type": "string",
+      "description": "AI recommendations for future sessions"
+    },
+    "completion_status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "interrupted",
+        "ongoing"
+      ],
+      "default": "ongoing",
+      "description": "Session completion status"
+    }
+  },
+  "required": [
+    "goal",
+    "start_time"
+  ]
+}

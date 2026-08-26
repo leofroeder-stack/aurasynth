@@ -1,0 +1,75 @@
+{
+  "name": "SavedSoundscape",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "User-given name for the soundscape"
+    },
+    "mood": {
+      "type": "string",
+      "description": "Mood/intention of the soundscape"
+    },
+    "genre": {
+      "type": "string",
+      "description": "Genre/style of the soundscape"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description provided during generation"
+    },
+    "parameters": {
+      "type": "object",
+      "description": "Complete soundscape configuration",
+      "properties": {
+        "mainFrequency": {
+          "type": "number"
+        },
+        "volume": {
+          "type": "number"
+        },
+        "waveType": {
+          "type": "string"
+        },
+        "layers": {
+          "type": "array"
+        },
+        "visualStyle": {
+          "type": "string"
+        },
+        "colorPalette": {
+          "type": "string"
+        },
+        "speed": {
+          "type": "number"
+        },
+        "intensity": {
+          "type": "number"
+        },
+        "complexity": {
+          "type": "number"
+        },
+        "symmetry": {
+          "type": "number"
+        },
+        "bloom": {
+          "type": "number"
+        },
+        "binaural": {
+          "type": "object"
+        },
+        "isochronic": {
+          "type": "object"
+        }
+      }
+    },
+    "explanation": {
+      "type": "string",
+      "description": "AI explanation of the soundscape"
+    }
+  },
+  "required": [
+    "name",
+    "parameters"
+  ]
+}

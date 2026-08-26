@@ -1,0 +1,24 @@
+{
+  "name": "ArchiveCache",
+  "type": "object",
+  "properties": {
+    "identifier": {
+      "type": "string",
+      "description": "Archive.org item identifier"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Cached metadata from Archive.org"
+    },
+    "tracks": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Cached track list"
+    }
+  },
+  "required": [
+    "identifier"
+  ]
+}
