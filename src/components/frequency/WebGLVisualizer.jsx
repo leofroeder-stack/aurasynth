@@ -1631,6 +1631,9 @@ export default function WebGLVisualizer({
     gl.attachShader(program, vertexShader);
     gl.attachShader(program, fragmentShader);
     gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.error('Shader error:', gl.getShaderInfoLog(fragmentShader) || gl.getProgramInfoLog(program));
+    }
     programRef.current = program;
 
     const positionBuffer = gl.createBuffer();
