@@ -24,7 +24,7 @@ export default function Sidebar({ isOpen, onClose }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
           />
         )}
       </AnimatePresence>
@@ -34,7 +34,7 @@ export default function Sidebar({ isOpen, onClose }) {
         initial={{ x: -320 }}
         animate={{ x: isOpen ? 0 : -320 }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="fixed left-0 top-0 h-full w-80 bg-[#0a0a0f]/95 backdrop-blur-xl border-r border-white/10 z-50 lg:translate-x-0 lg:static"
+        className="fixed left-0 top-0 h-full w-80 bg-[#0a0a0f]/95 backdrop-blur-xl border-r border-white/10 z-50"
       >
         <div className="flex flex-col h-full">
           {/* Header */}
@@ -52,7 +52,7 @@ export default function Sidebar({ isOpen, onClose }) {
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="text-gray-400 hover:text-white lg:hidden"
+              className="text-gray-400 hover:text-white"
             >
               <X className="w-5 h-5" />
             </Button>

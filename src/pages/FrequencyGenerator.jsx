@@ -773,7 +773,7 @@ export default function FrequencyGenerator() {
               <div className="flex items-center gap-3">
                 <button 
                   onClick={() => setSidebarOpen(true)}
-                  className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-fuchsia-500 flex items-center justify-center hover:scale-105 transition-transform lg:cursor-default lg:hover:scale-100"
+                  className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-fuchsia-500 flex items-center justify-center hover:scale-105 transition-transform"
                 >
                   <span className="text-xl">∿</span>
                 </button>
